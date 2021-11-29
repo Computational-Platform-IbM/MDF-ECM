@@ -7,14 +7,18 @@ Created on Fri Oct  1 10:10:52 2021
 
 #%%
 import numpy as np
-from MEPfunctions import importpath #, printreactions, calc_dG0_primepath
+import sys
+
+#if MEPfunctions.py not in same folder, add the required folder to path
+sys.path.append('C:\\Users\marit\Documents\LST\MSc\MEP\Scipy MDF\MDF-ECM')
+
+from MEPfunctions import importpath 
 
 from datafile import (
     F,
     default_T,
     default_pH,
     default_pH2)
-#from mdf_class import MDF_Analysis
 
 
 #%%
