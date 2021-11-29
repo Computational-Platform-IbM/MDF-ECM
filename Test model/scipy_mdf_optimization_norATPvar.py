@@ -8,7 +8,11 @@ Created on Wed Nov  3 17:17:42 2021
 #%%
 from scipy.optimize import minimize
 import numpy as np
-#import pandas as pd
+import sys
+
+#if MEPfunctions.py not in same folder, add the required folder to path
+sys.path.append('C:\\Users\marit\Documents\LST\MSc\MEP\Scipy MDF\MDF-ECM')
+
 from MEPfunctions import importpath
 import matplotlib.pyplot as plt
 
