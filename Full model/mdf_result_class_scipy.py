@@ -14,7 +14,7 @@ from datafile import R
 
 class MDF_Result(object):
     
-    def __init__(self, opt_conc, dg_prime_opt, dG0_path, reactions, compounds, S_netR, T, pH, ph2, maxCoA, maxPi, rNADH):
+    def __init__(self, opt_conc, dg_prime_opt, dG0_path, reactions, compounds, S_netR, T, pH, ph2, maxCoA, maxPi, rNADH, rNADPH):
         self._opt_conc = opt_conc
         self._dg_prime_opt = dg_prime_opt
         self._dg0 = dG0_path
@@ -27,6 +27,7 @@ class MDF_Result(object):
         self._maxCoA = maxCoA
         self._maxPi = maxPi
         self._rNADH = rNADH
+        self._rNADPH = rNADPH
         
         #create string of net reaction to add to figure title
         sub = ''
