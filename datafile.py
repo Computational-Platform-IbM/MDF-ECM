@@ -16,24 +16,9 @@ F       = 96485.322                     #C/mol e-
 
 default_T       = 293.15                    #K
 default_pH      = 7
-default_pH2     = 1                 #atm
+default_pH2     = 0.01                 #atm
+default_pCO2    = 0.01                 #atm
 
 dGatp0          = -8.15             #kJ/mol
 default_dGatp   = 50                #kJ/mol
 
-#fixed concentrations; cell biology in numbers (c_conmoi)
-#rather fix ratios, but the book results in very different ratios?
-#con_moi = ['ATP', 'ADP', 'Pi', 'NAD', 'NADH', 'NADP', 'NADPH', 'CoA']
-con_moi = ['ATP', 'NADH','NADPH']
-
-c_conmoi = {'ATP':      9.6e-3,   #M
-            'ADP':      0.55e-3, 
-            'Pi':       20e-3,          #source: Bionumbers
-            'NAD':      2.6e-3,
-            'NADH':     0.083e-3,
-            'NADP':     0.0021e-3,
-            'NADPH':    0.12e-3,
-            'CoA':      10e-3}#,           #source: Noor 2014 (PLOS)
-            #'Fd_ox':    float('NaN'),
-            #'Fd_red':   float('NaN')} 
-            
