@@ -194,8 +194,13 @@ class MDF_Analysis(Pathway):
                 Default is without fixed concentrations or pathway energy.   """
         
         def max_mdf(ln_conc, dg0):  
+            i_Pi = self._compounds.index('Pi')
+            cH = 10**-self._p_h
+            
+            rATP = np.exp( (self._dGatp - self._dGatp0) / (R*self._T)) * np.exp(ln_conc[i_Pi]) * (cH)
+            
             #set dg_prime as a function of dg0_prime and variables ln_conc
-            dg_prime = self._dg0 + R*self._T * self._stoich.T @ ln_conc
+            dg_prime = self._dg0 + ( R*self._T * self._stoich.T @ ln_conc ) + ( R * self._T * self._rATP_in_reaction * np.log(rATP) )
             
             #the optimization target is the minimum driving force (mdf) of the pathway
             #mdf is the reaction with the least amount of driving force (so the highest value)

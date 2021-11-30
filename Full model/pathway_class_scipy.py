@@ -9,7 +9,7 @@ Created on Fri Oct  1 10:10:52 2021
 import numpy as np
 import sys
 
-#if MEPfunctions.py not in same folder, add the required folder to path
+#if MEPfunctions.py and datafile.py not in same folder, add the required folder to path
 sys.path.append('C:\\Users\marit\Documents\LST\MSc\MEP\Scipy MDF\MDF-ECM')
 
 from MEPfunctions import importpath 
@@ -18,7 +18,9 @@ from datafile import (
     F,
     default_T,
     default_pH,
-    default_pH2)
+    default_pH2,
+    dGatp0,
+    default_dGatp)
 
 
 #%%
@@ -40,6 +42,10 @@ class Pathway(object):
         #set default values for NADH/NAD+ and NADPH/NADP+
         self._rNADH     = 0.05
         self._rNADPH    = 100
+        
+        #set default values for ATP production
+        self._dGatp0    = dGatp0
+        self._dGatp     = default_dGatp
         
         #set default tolerance for solver
         self._tol_conc  = 1e-9
@@ -64,6 +70,17 @@ class Pathway(object):
         #checks if the stoichiometry closes and automatically calculates dg0 values of all reactions
         self.check_element_balance()
         self.calc_dG0_path()
+        
+        #after calculating dg0 of the pathway reactions, remove rATP from the stoichiometric matrix etc
+        #save involvement of ATP/ADP in separate array
+        i_rATP = self._compounds.index('rATP')
+        self._rATP_in_reaction = self._stoich[i_rATP,:]
+
+        #remove rATP from matrix and arrays
+        self._compounds.pop(i_rATP)
+        self._stoich = np.delete(self._stoich, i_rATP, axis=0)
+        self._fixed_c = np.delete(self._fixed_c, i_rATP)
+        self._element_comp = np.delete(self._element_comp, i_rATP, axis=0)
         
         
     @property
@@ -110,6 +127,15 @@ class Pathway(object):
     def set_maxCoA(self, value):
         """Set the Pi pool."""
         self._maxCoA = value
+        
+    @property
+    def dGatp(self):
+        """Get the value of dGatp."""
+        return self._dGatp
+
+    def set_dGatp(self, value):
+        """Set the value of dGatp."""
+        self._dGatp = value
     
     def printreactions(self):
         """ Print all pathway reactions, to see and check if the stoichiometric matrix was set up correctly. """

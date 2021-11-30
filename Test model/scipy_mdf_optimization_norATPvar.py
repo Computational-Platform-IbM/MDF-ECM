@@ -41,7 +41,6 @@ maxCoA  = 10e-3
 #%% Optimization target for scipy.optimize.minimize
 
 def max_mdf(ln_conc, dg0, rATP_in_reaction):  
-    dg_prime = np.zeros(len(reactions))
     i_Pi = compounds.index('Pi')
 
     dGatp0  = -8.15    #kJ/mol
