@@ -253,8 +253,8 @@ class MDF_Analysis(Pathway):
         i_rNADH = self._compounds.index('rNADH')
         self._rNADH = opt_conc[i_rNADH]
         
-        i_rNADPH = self._compounds.index('rNADPH')
-        self._rNADPH = opt_conc[i_rNADPH]
+        #i_rNADPH = self._compounds.index('rNADPH')
+        #self._rNADPH = opt_conc[i_rNADPH]
 
         #create instance of MDF result class
         return MDF_Result(opt_conc, dg_prime_opt, self._dg0, 
