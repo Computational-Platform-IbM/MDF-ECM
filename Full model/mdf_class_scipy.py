@@ -259,8 +259,9 @@ class MDF_Analysis(Pathway):
         #create instance of MDF result class
         return MDF_Result(opt_conc, dg_prime_opt, self._dg0, 
                           self._reactions, self._compounds, self._S_netR,
-                          self._T, self._p_h, self._pH2,
+                          self._T, self._p_h, self._pH2, self._pCO2,
                           self._maxCoA, self._maxPi, self._rNADH, self._rNADPH)
+    
     
     def mdf_fixed_conc(self, fixed_rNADH = True):
         """     Function to call if you want to optimize the pathway using fixed concentrations. 

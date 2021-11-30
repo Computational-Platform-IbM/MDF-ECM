@@ -14,7 +14,7 @@ from datafile import R
 
 class MDF_Result(object):
     
-    def __init__(self, opt_conc, dg_prime_opt, dG0_path, reactions, compounds, S_netR, T, pH, ph2, maxCoA, maxPi, rNADH, rNADPH):
+    def __init__(self, opt_conc, dg_prime_opt, dG0_path, reactions, compounds, S_netR, T, pH, ph2, pCO2, maxCoA, maxPi, rNADH, rNADPH):
         self._opt_conc = opt_conc
         self._dg_prime_opt = dg_prime_opt
         self._dg0 = dG0_path
@@ -24,6 +24,7 @@ class MDF_Result(object):
         self._T = T
         self._p_h = pH
         self._ph2 = ph2
+        self._p_co2 = pCO2
         self._maxCoA = maxCoA
         self._maxPi = maxPi
         self._rNADH = rNADH
@@ -67,7 +68,7 @@ class MDF_Result(object):
                     i = self._compounds.index(comp)
                     conditions += f'\t {comp} = {self._opt_conc[i]:.3e}'.expandtabs()
 
-        conditions += f'\t Pi-pool = {self._maxPi:.2e} M \t CoA-pool = {self._maxCoA:.2e} M'.expandtabs()
+        conditions += f'\t pCO2 = {self._p_co2} atm \t Pi-pool = {self._maxPi:.2e} M \t CoA-pool = {self._maxCoA:.2e} M'.expandtabs()
         
         #make figure
         fig = plt.figure(figsize=(13,9))
