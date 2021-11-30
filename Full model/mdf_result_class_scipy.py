@@ -33,10 +33,11 @@ class MDF_Result(object):
         sub = ''
         prod = ''
         for j in range(len(self._S_netR)):
-             if self._S_netR[j] < 0:
-                 sub += f'{abs(self._S_netR[j]):.2f} {self._compounds[j]} + '
-             if self._S_netR[j] > 0:
-                prod += f' {abs(self._S_netR[j]):.2f} {self._compounds[j]} + '
+            if not self._compounds[j] == 'Pi':
+                 if self._S_netR[j] < 0:
+                     sub += f'{abs(self._S_netR[j]):.2f} {self._compounds[j]} + '
+                 if self._S_netR[j] > 0:
+                    prod += f' {abs(self._S_netR[j]):.2f} {self._compounds[j]} + '
                 
         sub = sub[0:-2]   #remove extra plus at the end for both sides of the reaction
         prod = prod[0:-2]
