@@ -19,6 +19,7 @@ from datafile import (
     default_T,
     default_pH,
     default_pH2,
+    default_pCO2,
     dGatp0,
     default_dGatp)
 
@@ -33,7 +34,7 @@ class Pathway(object):
         #initialize pathway with default values
         self._p_h   = default_pH  
         self._T     = default_T     #K
-        self._pH2   = default_pH2   #atm
+        
         
         #set default values for CoA and Pi pool
         self._maxPi     = 20e-3     #M
@@ -64,7 +65,12 @@ class Pathway(object):
          self._stoich, 
          self._rel_flux)     = importpath('\\' + filename)
         
-
+        if 'H2' in self._compounds:
+            self._pH2   = default_pH2   #atm
+        if 'CO2' in self._compounds:
+            self._pCO2   = default_pCO2   #atm
+            
+        
         #checks if the stoichiometry closes and automatically calculates dg0 values of all reactions
         self.check_element_balance()
         self.calc_dG0_path()
@@ -96,12 +102,21 @@ class Pathway(object):
         
     @property
     def p_h2(self):
-        """Get the partial pressure of hydrogen/concentration."""
+        """Get the partial pressure of hydrogen."""
         return self._pH2
 
     def set_p_h2(self, value):
-        """Set the partial pressure of hydrogen/concentration."""
+        """Set the partial pressure of hydrogen."""
         self._pH2 = value
+    
+    @property
+    def p_co2(self):
+        """Get the partial pressure of CO2."""
+        return self._pCO2
+
+    def set_p_co2(self, value):
+        """Set the partial pressure of CO2."""
+        self._pCO2 = value
         
     @property
     def T(self):

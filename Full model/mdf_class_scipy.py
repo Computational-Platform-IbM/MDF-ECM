@@ -89,28 +89,23 @@ class MDF_Analysis(Pathway):
             
             #constraint: [H2] is determined by Henry's law and hydrogen partial pressure
             return np.exp(ln_conc[i_H2]) - cH2
+        
+        def con_CO2(ln_conc):
+            #get index of compound CO2
+            i_CO2 = self._compounds.index('CO2')
             
-        def con_Pi(ln_conc):
-            i_Pi = self._compounds.index('Pi')
-            i_rATP = self._compounds.index('rATP')
-            #i_ATP = self._compounds.index('ATP')
-            #i_ADP = self._compounds.index('ADP')
+            #Henry's law: p_i = H_i * c_i
+            #with units of H in [l*atm/mol]
+            #partial pressure proportional to mol fraction in liquid
+            #assumption: ideal mixture, low values of x_i
+            H_CO2 = 1/0.037          #l*atm/mol
+            cCO2 = self._pCO2/H_CO2
             
-            #cATP = np.exp(ln_conc[i_ATP])
-            #cADP = np.exp(ln_conc[i_ADP])
-            cPi = np.exp(ln_conc[i_Pi])
-            rATP = np.exp(ln_conc[i_rATP])
+            if cCO2 > def_c_max:
+                cCO2 = def_c_max
             
-            ##TODO: option to adjust rATP?
-            # ADP + Pi + H --> ATP + H2O
-            dGatp0  = -8.15    #kJ/mol
-            dGatp   = 50
-            
-            cH = 10**-self._p_h
-            p_ratios =  cH * np.exp((dGatp - dGatp0) / (R*self._T))
-            #p_ratios =  np.exp((dGatp - dGatp0) / (R*self._T))
-            return (rATP/cPi) - p_ratios
-
+            #constraint: [H2] is determined by Henry's law and hydrogen partial pressure
+            return np.exp(ln_conc[i_CO2]) - cCO2
 
         def con_NADH(ln_conc):
             i_rNADH = self._compounds.index('rNADH')
@@ -149,7 +144,6 @@ class MDF_Analysis(Pathway):
         #create list of constraints
         cons = [{'type': 'eq', 'fun': con_coApool},
                 {'type': 'eq', 'fun': con_Pipool},
-                {'type': 'eq', 'fun': con_Pi},
                 {'type': 'eq', 'fun': con_H},
                 {'type': 'eq', 'fun': con_H2O}]
         
@@ -162,6 +156,8 @@ class MDF_Analysis(Pathway):
             cons += [{'type': 'eq', 'fun': con_NADPH}]
         if 'H2' in self._compounds:
             cons += [{'type': 'eq', 'fun': con_H2}]
+        if 'CO2' in self._compounds:
+            cons += [{'type': 'eq', 'fun': con_CO2}]
         if 'rFd' in self._compounds:
             cons += [{'type': 'eq', 'fun': con_Fd}]
             
@@ -224,11 +220,10 @@ class MDF_Analysis(Pathway):
         #get constraints for scipy minimize
         cons = self.get_constraints(fixed_rNADH)
         
-        #tolerance and initial values
+        #initial values
         conc0 = [np.log(1e-5)] * self._Nc
-    
-        i_Pi = self._compounds.index('Pi')
         #in E.coli, free Pi = 10 mM
+        i_Pi = self._compounds.index('Pi')
         conc0[i_Pi] = np.log(10e-3)
         
         #call minimizer
@@ -250,12 +245,16 @@ class MDF_Analysis(Pathway):
         
         #get results
         opt_conc = np.exp(res.x)
+        dg_prime_opt = np.zeros(len(self._reactions))
 
-        #get optimized dg values of reactions
-        dg_prime_opt = self._dg0 + R*self._T * self._stoich.T @ res.x
+        rATP = np.exp( (self._dGatp - self._dGatp0) / (R*self._T)) * opt_conc[i_Pi] * (10**-self._p_h)
+        dg_prime_opt = self._dg0 + ( R*self._T * self._stoich.T @ res.x ) + ( R * self._T * self._rATP_in_reaction * np.log(rATP) )
         
         i_rNADH = self._compounds.index('rNADH')
         self._rNADH = opt_conc[i_rNADH]
+        
+        i_rNADPH = self._compounds.index('rNADPH')
+        self._rNADPH = opt_conc[i_rNADPH]
 
         #create instance of MDF result class
         return MDF_Result(opt_conc, dg_prime_opt, self._dg0, 
