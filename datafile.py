@@ -17,7 +17,9 @@ F       = 96485.322                     #C/mol e-
 default_T       = 293.15                    #K
 default_pH      = 7
 default_pH2     = 1                 #atm
-#cH      = 10**-pH                   #M
+
+dGatp0          = -8.15             #kJ/mol
+default_dGatp   = 50                #kJ/mol
 
 #fixed concentrations; cell biology in numbers (c_conmoi)
 #rather fix ratios, but the book results in very different ratios?
