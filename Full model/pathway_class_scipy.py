@@ -64,9 +64,7 @@ class Pathway(object):
          self._stoich, 
          self._rel_flux)     = importpath('\\' + filename)
         
-        #get number of compounds and reactions in pathway
-        self._Nc, self._Nr  = self._stoich.shape
-        
+
         #checks if the stoichiometry closes and automatically calculates dg0 values of all reactions
         self.check_element_balance()
         self.calc_dG0_path()
@@ -81,7 +79,11 @@ class Pathway(object):
         self._stoich = np.delete(self._stoich, i_rATP, axis=0)
         self._fixed_c = np.delete(self._fixed_c, i_rATP)
         self._element_comp = np.delete(self._element_comp, i_rATP, axis=0)
+        self._S_netR = np.delete(self._S_netR, i_rATP)
+        self._deltaGf0 = np.delete(self._deltaGf0, i_rATP)
         
+        #get number of compounds and reactions in pathway
+        self._Nc, self._Nr  = self._stoich.shape
         
     @property
     def p_h(self):

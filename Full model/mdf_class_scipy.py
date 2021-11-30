@@ -193,7 +193,7 @@ class MDF_Analysis(Pathway):
                 Can be done with or without fixed concentrations for specific compounds. 
                 Default is without fixed concentrations or pathway energy.   """
         
-        def max_mdf(ln_conc, dg0):  
+        def max_mdf(ln_conc):  
             i_Pi = self._compounds.index('Pi')
             cH = 10**-self._p_h
             
@@ -226,14 +226,13 @@ class MDF_Analysis(Pathway):
         
         #tolerance and initial values
         conc0 = [np.log(1e-5)] * self._Nc
-        i_rATP = self._compounds.index('rATP')
-        conc0[i_rATP] = np.log(20)
-        
+    
         i_Pi = self._compounds.index('Pi')
+        #in E.coli, free Pi = 10 mM
         conc0[i_Pi] = np.log(10e-3)
         
         #call minimizer
-        res = minimize(max_mdf, conc0, args=(self._dg0), method='SLSQP', 
+        res = minimize(max_mdf, conc0, method='SLSQP', 
                        tol=self._tol_conc, bounds = bnds, constraints = cons, options = {'maxiter': 2000})
 
         #check if optimizer succeeded
