@@ -30,8 +30,8 @@ c_max   = def_c_max     #M
 T       = default_T     #K
 pH      = default_pH
 cH      = 10**-pH       #M
-p_H2    = 0.1           #atm
-p_CO2   = 0.1          #atm
+p_H2    = 0.01           #atm
+p_CO2   = 0.01          #atm
 
 F       = 96485.322                     #C/mol e-
 
@@ -266,7 +266,7 @@ for i in range(len(fixed_c)):
           
 #tolerance and initial values
 tol_conc = 1e-8
-conc0 = [np.log(1)] * Nc
+conc0 = [np.log(10e-3)] * Nc
 conc0[-1] = 7.9
 conc0[-2] = -3
 #convert bounds list to tuple; required for scipy.optimize.minimize
