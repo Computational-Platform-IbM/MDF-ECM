@@ -5,6 +5,10 @@ Created on Wed Nov 17 18:28:25 2021
 @author: marit
 """
 #%%
+import sys
+#if MEPfunctions.py and datafile.py not in same folder, add the required folder to path
+sys.path.append('C:\\Users\marit\Documents\LST\MSc\MEP\Scipy MDF\MDF-ECM')
+
 from mdf_class_scipy import MDF_Analysis
 import matplotlib.pyplot as plt
 import numpy as np

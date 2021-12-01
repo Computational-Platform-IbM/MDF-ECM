@@ -8,6 +8,12 @@ Created on Tue Oct  5 16:15:38 2021
 #%%
 import numpy as np
 import matplotlib.pyplot as plt
+
+# import sys
+# #if MEPfunctions.py and datafile.py not in same folder, add the required folder to path
+# sys.path.append('C:\\Users\marit\Documents\LST\MSc\MEP\Scipy MDF\MDF-ECM')
+
+
 from datafile import R
 
 #%%
@@ -110,7 +116,7 @@ class MDF_Result(object):
         ax3.set_xlabel('Compounds')
         ax3.set_xticks(plot_compounds)
         ax3.set_xticklabels(plot_compounds, fontsize=8, rotation=90)
-        ax3.set_ylim(10**-7, 10**-1)
+        #ax3.set_ylim(10**-7, 10**-1)
         ax3.plot([0, len(plot_conc)], [10**-6, 10**-6], 'k-')
         ax3.plot([0, len(plot_conc)], [10**-2, 10**-2], 'k-')
         ax3.set_yscale('log')

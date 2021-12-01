@@ -7,6 +7,10 @@ Created on Fri Oct  1 14:23:24 2021
 #%%
 import numpy as np
 from scipy.optimize import minimize
+# import sys
+
+# #if MEPfunctions.py and datafile.py not in same folder, add the required folder to path
+# sys.path.append('C:\\Users\marit\Documents\LST\MSc\MEP\Scipy MDF\MDF-ECM')
 
 from datafile import (
     def_c_max,
@@ -179,7 +183,8 @@ class MDF_Analysis(Pathway):
                 bnds += [(None, None)]
             else:
                 #take default min and max concentrations; physiological boundaries
-                bnds += [(np.log(def_c_min), np.log(def_c_max))]
+                #bnds += [(np.log(def_c_min), np.log(def_c_max))]
+                bnds += [(None, None)]
         
         return bnds
     
@@ -205,6 +210,7 @@ class MDF_Analysis(Pathway):
         
         #get bounds for scipy minimize
         bnds = self.get_bounds()
+        print(bnds)
         
         #if you want to fix product/substrate concentrations, update bounds for that compound
         if set_fixed_c == True:
@@ -245,7 +251,7 @@ class MDF_Analysis(Pathway):
         
         #get results
         opt_conc = np.exp(res.x)
-        dg_prime_opt = np.zeros(len(self._reactions))
+        #dg_prime_opt = np.zeros(len(self._reactions))
 
         rATP = np.exp( (self._dGatp - self._dGatp0) / (R*self._T)) * opt_conc[i_Pi] * (10**-self._p_h)
         dg_prime_opt = self._dg0 + ( R*self._T * self._stoich.T @ res.x ) + ( R * self._T * self._rATP_in_reaction * np.log(rATP) )
@@ -257,11 +263,23 @@ class MDF_Analysis(Pathway):
             self._rNADPH = opt_conc[self._compounds.index('rNADPH')]
 
         #create instance of MDF result class
-        return MDF_Result(opt_conc, dg_prime_opt, self._dg0, 
-                          self._reactions, self._compounds, self._S_netR, self._rATP_in_reaction,
-                          self._T, self._p_h, self._pH2, self._pCO2,
-                          self._maxCoA, self._maxPi, self._rNADH, self._rNADPH)
+        return MDF_Result(opt_conc, 
+                          dg_prime_opt, 
+                          self._dg0, 
+                          self._reactions, 
+                          self._compounds, 
+                          self._S_netR, 
+                          self._rATP_in_reaction,
+                          self._T, 
+                          self._p_h, 
+                          self._pH2, 
+                          self._pCO2,
+                          self._maxCoA, 
+                          self._maxPi, 
+                          self._rNADH, 
+                          self._rNADPH)
     
+
     
     def mdf_fixed_conc(self, fixed_rNADH = True):
         """     Function to call if you want to optimize the pathway using fixed concentrations. 
