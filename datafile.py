@@ -6,8 +6,8 @@ Created on Fri Oct  1 10:18:23 2021
 """
 
 #%%
-def_c_min   = 10**-6                    #M
-def_c_max   = 10**-2                    #M
+def_c_min   = 1e-6                    #M
+def_c_max   = 1e-2                    #M
 
 #gas constant
 R       = 8.31446261815324e-3           #kJ/(K * mol)
