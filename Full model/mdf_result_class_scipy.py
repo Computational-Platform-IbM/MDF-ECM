@@ -9,18 +9,15 @@ Created on Tue Oct  5 16:15:38 2021
 import numpy as np
 import matplotlib.pyplot as plt
 
-# import sys
-# #if MEPfunctions.py and datafile.py not in same folder, add the required folder to path
-# sys.path.append('C:\\Users\marit\Documents\LST\MSc\MEP\Scipy MDF\MDF-ECM')
-
-
 from datafile import R
 
 #%%
 
 class MDF_Result(object):
     
-    def __init__(self, opt_conc, dg_prime_opt, dG0_path, reactions, compounds, S_netR, rATP_in_reaction, T, pH, ph2, pCO2, maxCoA, maxPi, rNADH, rNADPH):
+    def __init__(self, opt_conc, dg_prime_opt, dG0_path, reactions, compounds, S_netR, rATP_in_reaction, 
+                 T, pH, ph2, pCO2, maxCoA, maxPi, rNADH, rNADPH, dGatp, dGatp0):
+        
         self._opt_conc = opt_conc
         self._dg_prime_opt = dg_prime_opt
         self._dg0 = dG0_path
@@ -36,6 +33,12 @@ class MDF_Result(object):
         self._maxPi = maxPi
         self._rNADH = rNADH
         self._rNADPH = rNADPH
+        self._dGatp = dGatp
+        self._dGatp0 = dGatp0
+        
+        i_Pi = self._compounds.index('Pi')
+        cH = 10**-self._p_h
+        self._rATP = np.exp( (self._dGatp - self._dGatp0) / (R*self._T)) * self._opt_conc[i_Pi] * (cH)
         
         #create string of net reaction to add to figure title
         sub = ''

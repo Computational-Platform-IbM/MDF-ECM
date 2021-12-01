@@ -7,10 +7,6 @@ Created on Fri Oct  1 10:10:52 2021
 
 #%%
 import numpy as np
-# import sys
-
-# #if MEPfunctions.py and datafile.py not in same folder, add the required folder to path
-# sys.path.append('C:\\Users\marit\Documents\LST\MSc\MEP\Scipy MDF\MDF-ECM')
 
 from MEPfunctions import importpath 
 

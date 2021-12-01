@@ -274,7 +274,9 @@ class MDF_Analysis(Pathway):
                           self._maxCoA, 
                           self._maxPi, 
                           self._rNADH, 
-                          self._rNADPH)
+                          self._rNADPH,
+                          self._dGatp,
+                          self._dGatp0)
     
 
     
