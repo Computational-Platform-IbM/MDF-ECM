@@ -11,45 +11,18 @@ import numpy as np
 
 #%%
 
-glu_to_ac = MDF_Analysis('glu_to_acetate_ratios')
-glu_to_ac_ebif = MDF_Analysis('glu_to_ac_e-bfc_ratios')
+glu_to_ac_ebif = MDF_Analysis('glu_to_ac_e-bfc_ratios_new')
 
-glu_to_ac.set_solver_tol(1e-7)
-glu_to_ac_ebif.set_solver_tol(1e-7)
-
-result = glu_to_ac.mdf_fixed_conc(fixed_rNADH=False)
-
-rNADH = result._rNADH
-glu_to_ac_ebif.set_rNADH(rNADH)
-
+#glu_to_ac_ebif.set_solver_tol(1e-7)
 result_ebif = glu_to_ac_ebif.mdf_fixed_conc()
 
-result.plot_results()
 result_ebif.plot_results()
-
-varpH2 = [1e-2, 1, 5]
-
-for pH2 in varpH2:
-    glu_to_ac_ebif.set_p_h2(pH2)
-    
-    result = glu_to_ac_ebif.mdf_fixed_conc()
-    #result.plot_results()
-    
-glu_to_ac_ebif.set_rNADH(0.05)
-for pH2 in varpH2:
-    glu_to_ac_ebif.set_p_h2(pH2)
-    
-    result = glu_to_ac_ebif.mdf_fixed_conc()
-    #result.plot_results()
 
 #%% Vary pi pool and NADH ratio
 varPi = [10e-3, 20e-3, 30e-3]
 var_rNADH = [5e-4, 5e-2, 0.5]
 
-glu_to_ac.set_solver_tol(1e-7)
 glu_to_ac_ebif.set_solver_tol(1e-7)
-
-glu_to_ac.set_p_h2(1), glu_to_ac_ebif.set_p_h2(1)
 
 conc = []
 conc_ebif = []
