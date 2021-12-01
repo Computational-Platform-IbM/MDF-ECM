@@ -7,10 +7,6 @@ Created on Fri Oct  1 14:23:24 2021
 #%%
 import numpy as np
 from scipy.optimize import minimize
-# import sys
-
-# #if MEPfunctions.py and datafile.py not in same folder, add the required folder to path
-# sys.path.append('C:\\Users\marit\Documents\LST\MSc\MEP\Scipy MDF\MDF-ECM')
 
 from datafile import (
     def_c_max,
@@ -167,7 +163,7 @@ class MDF_Analysis(Pathway):
             
         return cons
     
-    def get_bounds(self):
+    def get_bounds(self, phys_bounds = False):
         """ Function to the component bounds for the MDF optimization problem. """
         
         #create bounds list
@@ -183,13 +179,15 @@ class MDF_Analysis(Pathway):
                 bnds += [(None, None)]
             else:
                 #take default min and max concentrations; physiological boundaries
-                #bnds += [(np.log(def_c_min), np.log(def_c_max))]
-                bnds += [(None, None)]
+                if phys_bounds == True:
+                    bnds += [(np.log(def_c_min), np.log(def_c_max))]
+                if phys_bounds == False:
+                    bnds += [(None, None)]
         
         return bnds
     
     
-    def execute_mdf_basis(self, set_fixed_c=False, fixed_rNADH = True):
+    def execute_mdf_basis(self, set_fixed_c=False, fixed_rNADH = True, phys_bounds = False):
         """     Function to optimize for the MDF of the pathway.
                 Can be done with or without fixed concentrations for specific compounds. 
                 Default is without fixed concentrations or pathway energy.   """
@@ -209,8 +207,7 @@ class MDF_Analysis(Pathway):
             return mdf
         
         #get bounds for scipy minimize
-        bnds = self.get_bounds()
-        print(bnds)
+        bnds = self.get_bounds(phys_bounds)
         
         #if you want to fix product/substrate concentrations, update bounds for that compound
         if set_fixed_c == True:
@@ -284,7 +281,13 @@ class MDF_Analysis(Pathway):
     def mdf_fixed_conc(self, fixed_rNADH = True):
         """     Function to call if you want to optimize the pathway using fixed concentrations. 
                 Calls mdf_basis() with the variable 'set_fixed_c = True'. """
+        
+        #check whether the ratio NADH/NAD+ is to be optimized, so the value is not fixed (fixed = False)
         fixed = fixed_rNADH
+        #if so: use physiological bounds for all concentrations to get sensible answer
+        if fixed == False:
+            return self.execute_mdf_basis(set_fixed_c=True, fixed_rNADH=fixed, phys_bounds = True)
+        
         return self.execute_mdf_basis(set_fixed_c=True, fixed_rNADH=fixed)
     
     @property
