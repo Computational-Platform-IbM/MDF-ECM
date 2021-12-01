@@ -14,13 +14,14 @@ from datafile import R
 
 class MDF_Result(object):
     
-    def __init__(self, opt_conc, dg_prime_opt, dG0_path, reactions, compounds, S_netR, T, pH, ph2, pCO2, maxCoA, maxPi, rNADH, rNADPH):
+    def __init__(self, opt_conc, dg_prime_opt, dG0_path, reactions, compounds, S_netR, rATP_in_reaction, T, pH, ph2, pCO2, maxCoA, maxPi, rNADH, rNADPH):
         self._opt_conc = opt_conc
         self._dg_prime_opt = dg_prime_opt
         self._dg0 = dG0_path
         self._reactions = reactions
         self._compounds = compounds
         self._S_netR = S_netR
+        self._rATP_in_reaction = rATP_in_reaction
         self._T = T
         self._p_h = pH
         self._ph2 = ph2
@@ -39,7 +40,13 @@ class MDF_Result(object):
                      sub += f'{abs(self._S_netR[j]):.2f} {self._compounds[j]} + '
                  if self._S_netR[j] > 0:
                     prod += f' {abs(self._S_netR[j]):.2f} {self._compounds[j]} + '
-                
+        
+        ATP = sum(self._rATP_in_reaction)
+        if ATP > 0:
+            prod += f' {abs(ATP):.2f} ATP +'
+        else:
+            sub += f' {abs(ATP):.2f} ATP +'
+        
         sub = sub[0:-2]   #remove extra plus at the end for both sides of the reaction
         prod = prod[0:-2]
         
