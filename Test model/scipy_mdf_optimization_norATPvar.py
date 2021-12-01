@@ -30,8 +30,8 @@ c_max   = def_c_max     #M
 T       = default_T     #K
 pH      = default_pH
 cH      = 10**-pH       #M
-p_H2    = 0.01           #atm
-p_CO2   = 0.01          #atm
+p_H2    = 0.1           #atm
+p_CO2   = 0.1          #atm
 
 F       = 96485.322                     #C/mol e-
 
@@ -56,7 +56,7 @@ def max_mdf(ln_conc, dg0, rATP_in_reaction):
 
 #import pathway
 (reactions, compounds, element_balance, 
- fixed_c, deltaGf0, S_netR, stoich, rel_flux) = importpath('\\glu_to_acetate_ratios_new.xlsx') #\\glu_to_ac_e-bfc_ratios_new.xlsx')  #
+ fixed_c, deltaGf0, S_netR, stoich, rel_flux) = importpath('\\glu_to_ac_e-bfc_ratios_new.xlsx')  #\\glu_to_acetate_ratios_new.xlsx') #
 
 
 #%% Calculate dg0 values of reactions
@@ -135,7 +135,9 @@ for i in range(Nc):
         bnds += [(None, None)]
     else:
         #take default min and max concentrations; physiological boundaries
-        bnds += [(np.log(def_c_min), np.log(def_c_max))]
+        #bnds += [(np.log(def_c_min), np.log(def_c_max))]
+        bnds += [(None, None)]
+        
 
 #%% Constraints for scipy.optimize.minimize
 
@@ -264,7 +266,7 @@ for i in range(len(fixed_c)):
           
 #tolerance and initial values
 tol_conc = 1e-8
-conc0 = [np.log(1e-4)] * Nc
+conc0 = [np.log(1)] * Nc
 conc0[-1] = 7.9
 conc0[-2] = -3
 #convert bounds list to tuple; required for scipy.optimize.minimize
@@ -385,9 +387,9 @@ ax3.set_ylabel('Concentration [M]')
 ax3.set_xlabel('Compounds')
 ax3.set_xticks(plot_compounds)
 ax3.set_xticklabels(plot_compounds, fontsize=8, rotation=90)
-ax3.set_ylim(10**-7, 10**-1)
-ax3.plot([0, len(plot_conc)], [10**-6, 10**-6], 'k-')
-ax3.plot([0, len(plot_conc)], [10**-2, 10**-2], 'k-')
+#ax3.set_ylim(10**-7, 10**-1)
+ax3.plot([0, len(plot_conc)], [1e-6, 1e-6], 'k-')
+ax3.plot([0, len(plot_conc)], [1e-2, 1e-2], 'k-')
 ax3.set_yscale('log')
 
 plt.tight_layout()
