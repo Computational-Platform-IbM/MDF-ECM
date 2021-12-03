@@ -14,6 +14,7 @@ import os
 def importpath(filename):
     # Read the data from the excel sheet
     cwd = os.getcwd()
+
     # add file name incl extension below
     path = cwd + filename
     # specify which sheet you want to pull data from
@@ -21,7 +22,13 @@ def importpath(filename):
 
     # create np array from the dataframe
     data_ar = np.array(data)
-    
+
+    # create array containing just the compound identifiers
+    compound_ids = data_ar[:-1,0]
+    data_ar = np.delete(data_ar, 0, axis=1)
+
+    data_ar = np.array(data_ar, dtype=np.float64)
+
     #make sure no empty columns are included in the matrix
     empty = True
     i_empty = 0
@@ -46,20 +53,18 @@ def importpath(filename):
     rel_flux = data_ar[-1,9::]
     data_ar = np.delete(data_ar, -1, axis=0)
 
-    element_bal = data.iloc[:-1, 0:6]
+    element_bal = data.iloc[:-1, 1:7]
     element_balance = np.array(element_bal)
 
     #fixed_c
     fixed_c = data_ar[:,6]
-    # create array containing just the deltaG of formations
-    deltaGf0 = data_ar[:,7]
+
     #create array for stoichiometric coefficients of netto pathway reaction
-    S_netR = data_ar[:,8]
+    S_netR = data_ar[:,7]
     S_netR[np.isnan(S_netR)] = 0
 
-
     # create stoichiometric matrix with just the reaction coefficiets: remove first three columns 
-    stoich = data_ar[:, 9:]
+    stoich = data_ar[:, 8:]
     stoich[np.isnan(stoich)] = 0
     
-    return reactions, compounds, element_balance, fixed_c, deltaGf0, S_netR, stoich, rel_flux
+    return reactions, compounds, element_balance, fixed_c, compound_ids, S_netR, stoich, rel_flux
