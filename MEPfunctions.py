@@ -50,7 +50,7 @@ def importpath(filename):
     compounds = list(data.index)
     compounds.pop()             #remove relative flux from compound list
 
-    rel_flux = data_ar[-1,9::]
+    rel_flux = data_ar[-1,8:]
     data_ar = np.delete(data_ar, -1, axis=0)
 
     element_bal = data.iloc[:-1, 1:7]
