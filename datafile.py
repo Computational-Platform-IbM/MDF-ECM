@@ -14,7 +14,7 @@ R       = 8.31446261815324e-3           #kJ/(K * mol)
 #Faraday constant
 F       = 96485.322                     #C/mol e-
 
-default_T       = 293.15                    #K
+default_T       = 298.15                    #K
 default_pH      = 7
 default_pH2     = 0.01                 #atm
 default_pCO2    = 0.01                 #atm
