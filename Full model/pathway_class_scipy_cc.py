@@ -26,12 +26,12 @@ from equilibrator_api import ComponentContribution, Q_
 
 class Pathway_cc(object):
     
-    def __init__(self, filename):
+    def __init__(self, filename, T = default_T, pH = default_pH):
         """Create a Pathway object with default settings, importing the Pathway from an Excel sheet. """
         
         #initialize pathway with default values
-        self._p_h   = default_pH  
-        self._T     = default_T     #K
+        self._p_h   = pH  
+        self._T     = T     #K
         
         
         #set default values for CoA and Pi pool
@@ -67,10 +67,9 @@ class Pathway_cc(object):
         self._compounds_copy = self._compounds.copy()
         self._stoich_copy = self._stoich.copy()
         
-        if 'H2' in self._compounds:
-            self._pH2   = default_pH2   #atm
-        if 'CO2' in self._compounds:
-            self._pCO2   = default_pCO2   #atm
+        #default values, only actually relevant if H2 and CO2 in compounds
+        self._pH2   = default_pH2   #atm
+        self._pCO2   = default_pCO2   #atm
             
         
         #checks if the stoichiometry closes and automatically calculates dg0 values of all reactions
