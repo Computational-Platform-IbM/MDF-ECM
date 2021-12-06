@@ -63,6 +63,10 @@ class Pathway_cc(object):
          self._stoich, 
          self._rel_flux)     = importpath('\\' + filename)
         
+        #create copy of list with all compounds and stoich matrix
+        self._compounds_copy = self._compounds.copy()
+        self._stoich_copy = self._stoich.copy()
+        
         if 'H2' in self._compounds:
             self._pH2   = default_pH2   #atm
         if 'CO2' in self._compounds:
@@ -85,7 +89,7 @@ class Pathway_cc(object):
         self._fixed_c = np.delete(self._fixed_c, i_rATP)
         self._element_comp = np.delete(self._element_comp, i_rATP, axis=0)
         self._S_netR = np.delete(self._S_netR, i_rATP)
-        self._compound_ids = np.delete(self._compound_ids, i_rATP)
+        #self._compound_ids = np.delete(self._compound_ids, i_rATP)
         self._dGfprime = np.delete(self._dGfprime, i_rATP)
         
         #get number of compounds and reactions in pathway
@@ -99,6 +103,10 @@ class Pathway_cc(object):
     def set_p_h(self, value):
         """Set the pH."""
         self._p_h = value
+        #if the pH is changed: update dGf' values and dg0 of reactions
+        self.get_dGf_prime()
+        self.calc_dG0_path()
+        
         
     @property
     def p_h2(self):
@@ -126,6 +134,9 @@ class Pathway_cc(object):
     def set_T(self, value):
         """Set the temperature."""
         self._T = value
+        #if the temperature is changed: update dGf' values and dg0 of reactions
+        self.get_dGf_prime()
+        self.calc_dG0_path()
         
     @property
     def maxPi(self):
@@ -233,7 +244,7 @@ class Pathway_cc(object):
         dgf_prime_rc = dgf_mu_rc + delta_dgf_r_list
         
         #loop through compounds and check if they are a ratio of two compounds
-        for i, c in enumerate(self._compounds):
+        for i, c in enumerate(self._compounds_copy):
             if c in ratios:
                 #if so: subtract the dGf' of the accompanying compound to get a relative dGf'
                 self._dGfprime[i] += - dgf_prime_rc[ratios.index(c)]
@@ -245,7 +256,7 @@ class Pathway_cc(object):
                 This is automatically called when a new pathway is initialized. """
                 
         #first calculate dg0 values based on compound formation energies provided
-        self._dg0 = self._stoich.T @ self._dGfprime
+        self._dg0 = self._stoich_copy.T @ self._dGfprime
             
         #save all dg0 values as attribute of the pathway object
         return self._dg0
