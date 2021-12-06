@@ -71,20 +71,18 @@ class MDF_Result(object):
         
         
         #create string of reaction conditions
-        conditions = ''
-        comp_exceptions = ['H+', 'H2O', 'H2', 'rFd', 'rNADH', 'rNADPH', 'rATP']
+        conditions = 'pH = {self._p_h}'.expandtabs()
+        comp_exceptions = ['H+', 'H2O', 'H2', 'rNADH', 'rNADPH']
         
         for comp in comp_exceptions:
             if comp in self._compounds and comp != 'H2O':
-                if comp == 'H+':
-                    conditions += f'\t pH = {self._p_h}'.expandtabs()
-                elif comp == 'H2':
+                if comp == 'H2':
                     conditions += f'\t pH2 = {self._ph2} atm'.expandtabs()
                 else:
                     i = self._compounds.index(comp)
                     conditions += f'\t {comp} = {self._opt_conc[i]:.3e}'.expandtabs()
 
-        conditions += f'\t pCO2 = {self._p_co2} atm \t Pi-pool = {self._maxPi:.2e} M \t CoA-pool = {self._maxCoA:.2e} M'.expandtabs()
+        conditions += f'\t Pi-pool = {self._maxPi:.2e} M \t CoA-pool = {self._maxCoA:.2e} M'.expandtabs()
         
         #make figure
         fig = plt.figure(figsize=(13,9))
