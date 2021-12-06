@@ -139,7 +139,6 @@ class MDF_Analysis(Pathway_cc):
         #create list of constraints
         cons = [{'type': 'eq', 'fun': con_coApool},
                 {'type': 'eq', 'fun': con_Pipool},
-                #{'type': 'eq', 'fun': con_H},
                 {'type': 'eq', 'fun': con_H2O}]
         
         #conditional additions to constraints
