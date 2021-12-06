@@ -15,7 +15,9 @@ import numpy as np
 
 #%%
 
-glu_to_ac = MDF_Analysis('glu_to_acetate_ratios_new')
+glu_to_ac = MDF_Analysis('try') #'glu_to_ac_e-bfc_ratios_new') #'glu_to_acetate_ratios_new') #
+
+#%%
 
 result = glu_to_ac.execute_mdf_basis(set_fixed_c=True, fixed_rNADH = True, phys_bounds = True)
 result.plot_results()
@@ -35,25 +37,28 @@ print(result._dg_prime_opt)
 print(sum(result._dg_prime_opt))
 print(result._rATP)
 
-#%%
-
-
 
 #%% Vary NADH ratio
-var_rNADH = [3e-6, 5e-2, 0.16, 0.4, 1/240]
+#var_rNADH = [3e-6, 1/240, 5e-2, 0.16]
+var_rNADH = [0.4, 0.05]
+var_Pi = [10e-3, 20e-3, 30e-3, 50e-3]
 
 conc = []
 
 dg_opt = []
 
 
-for rNADH in var_rNADH:
-    glu_to_ac.set_rNADH(rNADH)
+
+for val in var_Pi:
+    glu_to_ac.set_maxPi(val)
     
-    result = glu_to_ac.execute_mdf_basis(set_fixed_c=True, fixed_rNADH = True, phys_bounds = True)
-    conc_val, dg_val = result.results_table()
-    conc += [{'rNADH': rNADH, 'conc': conc_val}]
-    dg_opt += [{'rNADH': rNADH, 'dg': dg_val}]
+    for val2 in var_rNADH:
+        glu_to_ac.set_rNADH(val2)
+    
+        result = glu_to_ac.execute_mdf_basis(set_fixed_c=True, fixed_rNADH = True, phys_bounds = True)
+        conc_val, dg_val = result.results_table()
+        conc += [{'maxPi': val, 'rNADH' : val2, 'conc': conc_val}]
+        dg_opt += [{'maxPi': val, 'rNADH' : val2, 'dg': dg_val}]
 
 #%%
 #make figure
@@ -83,15 +88,14 @@ for i in range(0,len(conc)):
     
     plot_dg = [float(val) for val in list(dg_opt[i]['dg'].values())]
     
-    ax2.plot(result._reactions, plot_dg, 'o', label = f"rNADH = {conc[i]['rNADH']}")
-    
-    ax3.plot(plot_compounds, plot_conc, 'o--', label = f"rNADH = {conc[i]['rNADH']}")
+    ax2.plot(result._reactions, plot_dg, 'o', label = f"maxPi = {conc[i]['maxPi']:.2e}, rNADH = {conc[i]['rNADH']:.2e}")
+    ax3.plot(plot_compounds, plot_conc, 'o--', label = f"maxPi = {conc[i]['maxPi']:.2e}, rNADH = {conc[i]['rNADH']:.2e}")
 
 ax2.grid(True)
 ax3.grid(True)
 ax2.set_ylabel('$\Delta$G [kJ/mol]')
 ax2.set_xlabel('Reactions')
-#plt.ylim([-20, 0])
+#ax2.set_ylim([-40, 5])
 ax2.legend()
 
 ax3.set_xticklabels(plot_compounds, fontsize=8, rotation=90)
