@@ -14,11 +14,12 @@ from datafile import (
     F,
     R)
 
-from pathway_class_scipy import Pathway
+from pathway_class_scipy_cc import Pathway_cc
+#from pathway_class_scipy import Pathway
 from mdf_result_class_scipy import MDF_Result
 
 #%%
-class MDF_Analysis(Pathway):
+class MDF_Analysis(Pathway_cc):
     
     def get_constraints(self, fixed_rNADH = False):
         
@@ -62,13 +63,6 @@ class MDF_Analysis(Pathway):
             #constraint: the sum of all compounds carrying phosphate should be equal to the total pool (includes free Pi)
             return totalPi - self._maxPi
 
-        def con_H(ln_conc):
-            #get index of compound H+
-            i_H = self._compounds.index('H+')
-            
-            #constraint: [H+] = 10**-pH
-            return np.exp(ln_conc[i_H]) - 10**-self._p_h
-
         def con_H2O(ln_conc):
             #get index of compound H2O
             i_H2O = self._compounds.index('H2O')
@@ -86,6 +80,7 @@ class MDF_Analysis(Pathway):
             #assumption: ideal mixture, low values of x_i
             H_H2 = 1228         #l*atm/mol
             cH2 = self._pH2/H_H2
+            #cH2 = 1e-3
             
             #constraint: [H2] is determined by Henry's law and hydrogen partial pressure
             return np.exp(ln_conc[i_H2]) - cH2
@@ -124,15 +119,15 @@ class MDF_Analysis(Pathway):
         def con_Fd(ln_conc):
             # dG' = - n F E'
             # combine with dG' = dGo + RTln(P/S)
-            # Fd_ox + 2e- --> Fd_red-2
+            # Fd_ox + e- --> Fd_red-1
             i_rFd = self._compounds.index('rFd')
             
-            n       = 2
+            n       = 1
             E0      = -400e-3
             dG0_Fd  = (-n*F*E0 )/1000  
             
             #values from Buckel & Thauer 2013
-            n       = 2
+            n       = 1
             Eprime  = -500e-3                       #V (J/C)
             
             dG_Fdprime = -n*F*Eprime/1000           #kJ
@@ -144,7 +139,7 @@ class MDF_Analysis(Pathway):
         #create list of constraints
         cons = [{'type': 'eq', 'fun': con_coApool},
                 {'type': 'eq', 'fun': con_Pipool},
-                {'type': 'eq', 'fun': con_H},
+                #{'type': 'eq', 'fun': con_H},
                 {'type': 'eq', 'fun': con_H2O}]
         
         #conditional additions to constraints
@@ -159,7 +154,7 @@ class MDF_Analysis(Pathway):
         if 'CO2' in self._compounds:
             cons += [{'type': 'eq', 'fun': con_CO2}]
         if 'rFd' in self._compounds:
-            cons += [{'type': 'eq', 'fun': con_Fd}]
+           cons += [{'type': 'eq', 'fun': con_Fd}]
             
         return cons
     
@@ -175,7 +170,7 @@ class MDF_Analysis(Pathway):
         #loop through compounds
         for i in range(self._Nc):
             #check for exceptions
-            if self._compounds[i] in comp_exceptions:# or compounds[i] == 'Pi':
+            if self._compounds[i] in comp_exceptions:
                 bnds += [(None, None)]
             else:
                 #take default min and max concentrations; physiological boundaries
@@ -224,7 +219,7 @@ class MDF_Analysis(Pathway):
         cons = self.get_constraints(fixed_rNADH)
         
         #initial values
-        conc0 = [np.log(1e-5)] * self._Nc
+        conc0 = [np.log(1e-4)] * self._Nc
         #in E.coli, free Pi = 10 mM
         i_Pi = self._compounds.index('Pi')
         conc0[i_Pi] = np.log(10e-3)
