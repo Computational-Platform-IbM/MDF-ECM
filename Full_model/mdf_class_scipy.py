@@ -224,7 +224,7 @@ class MDF_Analysis(Pathway_cc):
         conc0[i_Pi] = np.log(10e-3)
         
         #call minimizer
-        res = minimize(max_mdf, conc0, method='SLSQP', 
+        res = minimize(max_mdf, conc0, #method='SLSQP', 
                        tol=self._tol_conc, bounds = bnds, constraints = cons, options = {'maxiter': 2000})
 
         #check if optimizer succeeded
@@ -232,7 +232,7 @@ class MDF_Analysis(Pathway_cc):
             #try again with less tolerance (for example 1e-9 --> 1e-8)
             self.set_solver_tol(self._tol_conc*10)   
            
-            res = minimize(max_mdf, conc0, args=(self._dg0), method='SLSQP', 
+            res = minimize(max_mdf, conc0, #method='SLSQP', 
                            tol=self._tol_conc, bounds = bnds, constraints = cons, options = {'maxiter': 2000})
             
             #if optimizer did not succeed again: raise error with cause of optimization failure
