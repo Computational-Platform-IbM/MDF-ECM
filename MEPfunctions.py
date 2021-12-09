@@ -162,7 +162,7 @@ def comparison_plot(dgs: Dict, conc: Dict, mdf: List, key_info: List):
 
 
     #concentrations
-    comp_exceptions = ['H+', 'H2O', 'H2', 'rFd', 'rNADH', 'rNADPH', 'rATP']
+    comp_exceptions = ['H+', 'H2O', 'rFd', 'rNADH', 'rNADPH', 'rATP']
     remove = []
     for i, comp in enumerate(compounds):
         if comp in comp_exceptions:
