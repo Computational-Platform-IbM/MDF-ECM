@@ -152,7 +152,12 @@ class MDF_Analysis(Pathway_cc):
             dG0_Fd  = (-n*F*E0 )/1000  
             
             #values from Buckel & Thauer 2013
-            Eprime  = -500e-3                       #V (J/C)
+            #Eprime  = -500e-3                       #V (J/C)
+            #Set Eprime of Fd equal to that of hydrogen production
+            # 2 H+ + 2e- --> H2
+            # equation derived from dG' = - nFE'
+            # input dG' = dg0 + RT ln (P/S) and dg0 = -nFE0
+            Eprime  = -414e-3 +  ((R*self._T)/(n*F)) * ( ln_conc[self._compounds.index('H2')] - 2*np.log(10**(-self._p_h)) )    #V (J/C)
             
             dG_Fdprime = -n*F*Eprime/1000           #kJ
             rFd_val = np.exp((dG_Fdprime - dG0_Fd)/(R*self._T))
