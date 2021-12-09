@@ -76,7 +76,7 @@ class MDF_Result(object):
         
         #create string of reaction conditions
         conditions = f'pH = {self._p_h}'.expandtabs()
-        comp_exceptions = ['H+', 'H2O', 'H2', 'rNADH', 'rNADPH', 'rFd']
+        comp_exceptions = ['H+', 'H2O', 'rNADH', 'rNADPH', 'rFd']
         
         for comp in comp_exceptions:
             if comp in self._compounds and comp != 'H2O' and comp != 'rFd':
