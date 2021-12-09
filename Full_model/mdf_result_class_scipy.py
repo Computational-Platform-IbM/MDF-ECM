@@ -80,7 +80,7 @@ class MDF_Result(object):
         comp_exceptions = ['H+', 'H2O', 'rNADH', 'rNADPH', 'rFd']
         
         for comp in comp_exceptions:
-            if comp in self._compounds and comp != 'H2O' and comp != 'rFd':
+            if comp in self._compounds and comp != 'H2O':
                 if comp == 'H2':
                     conditions += f'\t pH2 = {self._ph2} atm'.expandtabs()
                 else:
