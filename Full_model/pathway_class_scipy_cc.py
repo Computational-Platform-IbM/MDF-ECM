@@ -193,7 +193,7 @@ class Pathway_cc(object):
     
     def get_dGf_prime(self):
         """ Get physiological delta G of formation for all compounds.
-            Code from eQ: https://equilibrator.readthedocs.io/en/latest/equilibrator_examples.html#Using-formation-energies-to-calculate-reaction-energies
+            Code (adapted) from eQ: https://equilibrator.readthedocs.io/en/latest/equilibrator_examples.html#Using-formation-energies-to-calculate-reaction-energies
             Coupled to database, accounted for pH and temperature."""
         
         cc = ComponentContribution()
