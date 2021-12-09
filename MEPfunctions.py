@@ -144,7 +144,7 @@ def generate_gif(args: Dict):
     
 #%% 
 
-def comparison_plot(dgs: Dict, conc: Dict, key_info: List):
+def comparison_plot(dgs: Dict, conc: Dict, mdf: List, key_info: List):
     netreaction_eq, compounds, reactions, dg0 = key_info
     
     colours = ['mediumblue', 'darkorchid', 'palevioletred', 
@@ -183,7 +183,7 @@ def comparison_plot(dgs: Dict, conc: Dict, key_info: List):
             if key != 'conc':
                 lab += f'{key} = {conc[i][key]:.2e}, '
         
-        lab = lab[:-2]
+        lab += f'mdf = {mdf[i]} kJ/mol'
         
         ax2.plot(reactions, plot_dg, 'o', color = colours[i], label = lab)
         ax3.plot(plot_compounds, plot_conc, 'o', color = colours[i], label = lab)
@@ -193,7 +193,7 @@ def comparison_plot(dgs: Dict, conc: Dict, key_info: List):
     ax3.grid(True)
     ax2.set_ylabel('$\Delta$G [kJ/mol]')
     ax2.set_xlabel('Reactions')
-    ax2.legend()
+    #ax2.legend()
     
     ax3.title.set_text('Compound concentrations')
     ax3.set_xticklabels(plot_compounds, fontsize=8, rotation=90)
