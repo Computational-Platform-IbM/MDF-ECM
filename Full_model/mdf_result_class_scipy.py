@@ -36,6 +36,8 @@ class MDF_Result(object):
         self._dGatp = dGatp
         self._dGatp0 = dGatp0
         
+        
+        
         i_Pi = self._compounds.index('Pi')
         cH = 10**-self._p_h
         self._rATP = np.exp( (self._dGatp - self._dGatp0) / (R*self._T)) * self._opt_conc[i_Pi] * (cH)
@@ -61,7 +63,9 @@ class MDF_Result(object):
         
         #save the netto reaction equation as attribute of object
         self._netreaction_eq = sub + '<-->' + prod
-            
+        
+        self._key_info = [self._netreaction_eq, compounds, reactions, dG0_path]
+        
         return
 
     def plot_results(self):
