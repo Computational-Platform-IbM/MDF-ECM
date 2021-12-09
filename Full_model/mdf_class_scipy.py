@@ -21,7 +21,7 @@ from mdf_result_class_scipy import MDF_Result
 #%%
 class MDF_Analysis(Pathway_cc):
     
-    def get_constraints(self, fixed_rNADH = False):
+    def get_constraints(self, user_defined_rNADH = False):
         
         def con_coApool(ln_conc):
             #totalCoA= total amount of compounds carrying CoA
@@ -103,11 +103,35 @@ class MDF_Analysis(Pathway_cc):
             #constraint: [H2] is determined by Henry's law and hydrogen partial pressure
             return np.exp(ln_conc[i_CO2]) - cCO2
 
-        def con_NADH(ln_conc):
+        def con_NADH_EP(ln_conc):
+            i_rNADH = self._compounds.index('rNADH')
+            
+            #NAD+ + 2e- + H+ --> NADH
+            
+            n       = 2
+            E0      = -320e-3
+            dG0_NADH  = (-n*F*E0 )/1000  
+            
+            #values from Buckel & Thauer 2013
+            Eprime  = -280e-3                       #V (J/C)
+            
+            dG_NADHprime = -n*F*Eprime/1000           #kJ
+            rNADH_val = np.exp((dG_NADHprime - dG0_NADH)/(R*self._T))
+            
+            rNADH = ln_conc[i_rNADH]
+            
+            #store rNADH value from electron potential
+            self._rNADH = rNADH_val
+            
+            return rNADH - np.log(rNADH_val)
+        
+        def con_NADH_set(ln_conc):
             i_rNADH = self._compounds.index('rNADH')
             rNADH = ln_conc[i_rNADH]
-
-            rNADH_val = self._rNADH 
+            
+            #Get the value that was set as rNADH from the attribute rNADH of the object
+            rNADH_val = self._rNADH
+            
             return rNADH - np.log(rNADH_val)
 
         def con_NADPH(ln_conc):
@@ -128,7 +152,6 @@ class MDF_Analysis(Pathway_cc):
             dG0_Fd  = (-n*F*E0 )/1000  
             
             #values from Buckel & Thauer 2013
-            n       = 1
             Eprime  = -500e-3                       #V (J/C)
             
             dG_Fdprime = -n*F*Eprime/1000           #kJ
@@ -143,9 +166,11 @@ class MDF_Analysis(Pathway_cc):
                 {'type': 'eq', 'fun': con_H2O}]
         
         #conditional additions to constraints
-        #if rNADH is NOT to be optimized but rather a fixed value (default or defined by user)
-        if fixed_rNADH == True:
-            cons += [{'type': 'eq', 'fun': con_NADH}]
+        #if rNADH is NOT defined by user, but based on the electron potential
+        if user_defined_rNADH == False:
+            cons += [{'type': 'eq', 'fun': con_NADH_EP}]
+        else:
+            cons += [{'type': 'eq', 'fun': con_NADH_set}]
         #if the following compounds are actually in the metabolic network:
         if 'rNADPH' in self._compounds:
             cons += [{'type': 'eq', 'fun': con_NADPH}]
@@ -182,7 +207,7 @@ class MDF_Analysis(Pathway_cc):
         return bnds
     
     
-    def execute_mdf_basis(self, set_fixed_c=False, fixed_rNADH = True, phys_bounds = False):
+    def execute_mdf_basis(self, set_fixed_c=False, user_defined_rNADH = False, phys_bounds = False):
         """     Function to optimize for the MDF of the pathway.
                 Can be done with or without fixed concentrations for specific compounds. 
                 Default is without fixed concentrations or pathway energy.   """
@@ -216,7 +241,7 @@ class MDF_Analysis(Pathway_cc):
         bnds = tuple(bnds)
         
         #get constraints for scipy minimize
-        cons = self.get_constraints(fixed_rNADH)
+        cons = self.get_constraints(user_defined_rNADH)
         
         #initial values
         conc0 = [np.log(1e-4)] * self._Nc
@@ -275,17 +300,17 @@ class MDF_Analysis(Pathway_cc):
     
 
     
-    def mdf_fixed_conc(self, fixed_rNADH = True):
+    def mdf_fixed_conc(self, user_defined_rNADH = False):
         """     Function to call if you want to optimize the pathway using fixed concentrations. 
                 Calls mdf_basis() with the variable 'set_fixed_c = True'. """
         
         #check whether the ratio NADH/NAD+ is to be optimized, so the value is not fixed (fixed = False)
-        fixed = fixed_rNADH
+        fixed = user_defined_rNADH
         #if so: use physiological bounds for all concentrations to get sensible answer
         if fixed == False:
-            return self.execute_mdf_basis(set_fixed_c=True, fixed_rNADH=fixed, phys_bounds = True)
+            return self.execute_mdf_basis(set_fixed_c=True, user_defined_rNADH=fixed, phys_bounds = True)
         
-        return self.execute_mdf_basis(set_fixed_c=True, fixed_rNADH=fixed)
+        return self.execute_mdf_basis(set_fixed_c=True, user_defined_rNADH=fixed)
     
     @property
     def solver_tol(self):
