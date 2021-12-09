@@ -16,7 +16,7 @@ from datafile import R
 class MDF_Result(object):
     
     def __init__(self, opt_conc, dg_prime_opt, dG0_path, reactions, compounds, S_netR, rATP_in_reaction, 
-                 T, pH, ph2, pCO2, maxCoA, maxPi, rNADH, rNADPH, dGatp, dGatp0):
+                 T, pH, ph2, pCO2, maxCoA, maxPi, rNADH, rNADPH, rFd, dGatp, dGatp0):
         
         self._opt_conc = opt_conc
         self._dg_prime_opt = dg_prime_opt
@@ -33,6 +33,7 @@ class MDF_Result(object):
         self._maxPi = maxPi
         self._rNADH = rNADH
         self._rNADPH = rNADPH
+        self._rFd = rFd
         self._dGatp = dGatp
         self._dGatp0 = dGatp0
         

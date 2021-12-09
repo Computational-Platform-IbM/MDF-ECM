@@ -40,11 +40,13 @@ class Pathway_cc(object):
         
         #set default values for NADH/NAD+ and NADPH/NADP+
         self._rNADH     = 0.05
-        self._rNADPH    = 100
+        self._rNADPH    = None
         
         #set default values for ATP production
         self._dGatp0    = dGatp0
         self._dGatp     = default_dGatp
+        
+        self._rFd  = None
         
         #set default tolerance for solver
         self._tol_conc  = 1e-9
