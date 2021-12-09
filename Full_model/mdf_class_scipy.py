@@ -96,6 +96,7 @@ class MDF_Analysis(Pathway_cc):
             H_CO2 = 1/0.037          #l*atm/mol
             cCO2 = self._pCO2/H_CO2
             
+            ##TODO: smoothness of constraints? if/abs statements can create problems
             if cCO2 > def_c_max:
                 cCO2 = def_c_max
             
