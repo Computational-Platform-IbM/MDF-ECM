@@ -15,11 +15,12 @@ from datafile import R
 
 class MDF_Result(object):
     
-    def __init__(self, opt_conc, dg_prime_opt, dG0_path, reactions, compounds, S_netR, rATP_in_reaction, 
+    def __init__(self, opt_conc, dg_prime_opt, overall_dg_prime, dG0_path, reactions, compounds, S_netR, rATP_in_reaction, 
                  T, pH, ph2, pCO2, maxCoA, maxPi, rNADH, rNADPH, rFd, dGatp, dGatp0):
         
         self._opt_conc = opt_conc
         self._dg_prime_opt = dg_prime_opt
+        self._totaldG = overall_dg_prime
         self._dg0 = dG0_path
         self._reactions = reactions
         self._compounds = compounds
@@ -49,21 +50,21 @@ class MDF_Result(object):
         for j in range(len(self._S_netR)):
             if not self._compounds[j] == 'Pi':
                  if self._S_netR[j] < 0:
-                     sub += f'{abs(self._S_netR[j]):.2f} {self._compounds[j]} + '
+                     sub += f'{abs(self._S_netR[j])} {self._compounds[j]} + '
                  if self._S_netR[j] > 0:
-                    prod += f' {abs(self._S_netR[j]):.2f} {self._compounds[j]} + '
+                    prod += f' {abs(self._S_netR[j])} {self._compounds[j]} + '
         
         ATP = sum(self._rATP_in_reaction)
         if ATP > 0:
-            prod += f' {abs(ATP):.2f} ATP +'
+            prod += f' {abs(ATP)} ATP +'
         else:
-            sub += f' {abs(ATP):.2f} ATP +'
+            sub += f' {abs(ATP)} ATP +'
         
         sub = sub[0:-2]   #remove extra plus at the end for both sides of the reaction
         prod = prod[0:-2]
         
         #save the netto reaction equation as attribute of object
-        self._netreaction_eq = sub + '<-->' + prod
+        self._netreaction_eq = sub + u'\u279E' + prod
         
         self._key_info = [self._netreaction_eq, compounds, reactions, dG0_path]
         
@@ -91,7 +92,9 @@ class MDF_Result(object):
         
         #make figure
         fig = plt.figure(figsize=(13,9))
-        plt.suptitle(self._netreaction_eq + '\n\n' + conditions)
+        plt.suptitle(self._netreaction_eq + '\n\n' + 
+                     f'Overall reaction energy: {self._totaldG:.2f} kJ/mol' + 
+                     '\n\n' + conditions)
 
         #inidividual deltaG values of reactions
         ax2 = fig.add_subplot(211)
@@ -101,6 +104,7 @@ class MDF_Result(object):
         ax2.grid()
         ax2.set_ylabel('$\Delta$G [kJ/mol]')
         ax2.set_xlabel('Reactions')
+        ax2.xaxis.set_ticks(self._reactions)
         ax2.set_xticklabels(self._reactions, fontsize=8, rotation=90)
         ax2.legend()
 
@@ -120,7 +124,7 @@ class MDF_Result(object):
         ax3.grid()
         ax3.set_ylabel('Concentration [M]')
         ax3.set_xlabel('Compounds')
-        ax3.set_xticks(plot_compounds)
+        ax3.xaxis.set_ticks(plot_compounds)
         ax3.set_xticklabels(plot_compounds, fontsize=8, rotation=90)
         #ax3.set_ylim(10**-7, 10**-1)
         ax3.plot([0, len(plot_conc)], [10**-6, 10**-6], 'k-')
