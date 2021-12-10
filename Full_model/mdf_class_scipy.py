@@ -187,10 +187,13 @@ class MDF_Analysis(Pathway_cc):
         #if the following compounds are actually in the metabolic network:
         if 'rNADPH' in self._compounds:
             cons += [{'type': 'eq', 'fun': con_NADPH}]
+        
+        #Lines below commented for now: not using partial pressure! It's about the liquid phase
         # if 'H2' in self._compounds:
         #     cons += [{'type': 'eq', 'fun': con_H2}]
         # if 'CO2' in self._compounds:
         #     cons += [{'type': 'eq', 'fun': con_CO2}]
+        
         if 'rFd' in self._compounds:
            cons += [{'type': 'eq', 'fun': con_Fd}]
             
