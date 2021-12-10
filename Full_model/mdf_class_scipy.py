@@ -15,8 +15,8 @@ from datafile import (
     R)
 
 from pathway_class_scipy_cc import Pathway_cc
-#from pathway_class_scipy import Pathway
 from mdf_result_class_scipy import MDF_Result
+import warnings
 
 #%%
 class MDF_Analysis(Pathway_cc):
@@ -147,20 +147,28 @@ class MDF_Analysis(Pathway_cc):
             # Fd_ox + e- --> Fd_red-1
             i_rFd = self._compounds.index('rFd')
             
-            n       = 1
+            n_Fd       = 1
             E0      = -400e-3
-            dG0_Fd  = (-n*F*E0 )/1000  
+            dG0_Fd  = (-n_Fd*F*E0 )/1000  
             
             #values from Buckel & Thauer 2013
             #Eprime  = -500e-3                       #V (J/C)
+            
             #Set Eprime of Fd equal to that of hydrogen production
             # 2 H+ + 2e- --> H2
             # equation derived from dG' = - nFE'
             # input dG' = dg0 + RT ln (P/S) and dg0 = -nFE0
-            Eprime  = -414e-3 +  ((R*self._T)/(n*F)) * ( ln_conc[self._compounds.index('H2')] - 2*np.log(10**(-self._p_h)) )    #V (J/C)
+            n = 2
+            Eprime  = -414e-3 + ( (R*self._T)/(n*F) ) * ( ln_conc[self._compounds.index('H2')] - 2*np.log(10**(-self._p_h)) )    #V (J/C)
             
-            dG_Fdprime = -n*F*Eprime/1000           #kJ
+            #dg0_H2 = self._dGfprime[self._compounds.index('H2')]
+            
+            
+            dG_Fdprime = -n_Fd*F*Eprime/1000           #kJ
             rFd_val = np.exp((dG_Fdprime - dG0_Fd)/(R*self._T))
+            
+            #save value as attribute
+            self._rFd = rFd_val
             
             rFd = ln_conc[i_rFd]
             return rFd - np.log(rFd_val)
@@ -179,10 +187,10 @@ class MDF_Analysis(Pathway_cc):
         #if the following compounds are actually in the metabolic network:
         if 'rNADPH' in self._compounds:
             cons += [{'type': 'eq', 'fun': con_NADPH}]
-        if 'H2' in self._compounds:
-            cons += [{'type': 'eq', 'fun': con_H2}]
-        if 'CO2' in self._compounds:
-            cons += [{'type': 'eq', 'fun': con_CO2}]
+        # if 'H2' in self._compounds:
+        #     cons += [{'type': 'eq', 'fun': con_H2}]
+        # if 'CO2' in self._compounds:
+        #     cons += [{'type': 'eq', 'fun': con_CO2}]
         if 'rFd' in self._compounds:
            cons += [{'type': 'eq', 'fun': con_Fd}]
             
@@ -283,10 +291,25 @@ class MDF_Analysis(Pathway_cc):
         
         if 'rNADPH' in self._compounds:
             self._rNADPH = opt_conc[self._compounds.index('rNADPH')]
+        
+        #Check results: sum dgs equal to overall dg?
+        sum_dg = sum(dg_prime_opt)
+        
+        overall_dg0 = self._S_netR_copy.T @ self._dGfprime
+        overall_dg_prime = overall_dg0 + ( R*self._T * self._S_netR.T @ res.x ) + ( R * self._T * self._netATP * np.log(rATP) )
+        
+        #Floor values so that float precision does not matter as much
+        check = np.floor(sum_dg) - np.floor(overall_dg_prime)
+        #If the difference between the two floored values is not zero, something is wrong: raise error
+        if check != 0:
+            raise ValueError(
+                "The sum of reaction energies is not equal to the overall reaction energy!")
+       
 
         #create instance of MDF result class
         return MDF_Result(opt_conc, 
                           dg_prime_opt, 
+                          overall_dg_prime,
                           self._dg0, 
                           self._reactions, 
                           self._compounds, 
@@ -300,22 +323,9 @@ class MDF_Analysis(Pathway_cc):
                           self._maxPi, 
                           self._rNADH, 
                           self._rNADPH,
+                          self._rFd,
                           self._dGatp,
                           self._dGatp0)
-    
-
-    
-    def mdf_fixed_conc(self, user_defined_rNADH = False):
-        """     Function to call if you want to optimize the pathway using fixed concentrations. 
-                Calls mdf_basis() with the variable 'set_fixed_c = True'. """
-        
-        #check whether the ratio NADH/NAD+ is to be optimized, so the value is not fixed (fixed = False)
-        fixed = user_defined_rNADH
-        #if so: use physiological bounds for all concentrations to get sensible answer
-        if fixed == False:
-            return self.execute_mdf_basis(set_fixed_c=True, user_defined_rNADH=fixed, phys_bounds = True)
-        
-        return self.execute_mdf_basis(set_fixed_c=True, user_defined_rNADH=fixed)
     
     @property
     def solver_tol(self):
@@ -346,4 +356,13 @@ class MDF_Analysis(Pathway_cc):
     
     def to_default(self):
         """ Set all values to default values again """
+        
+    def fix_compound_value(self, comp: str, conc: float):
+        if conc > 10e-2 or conc < 1e-6:
+            warnings.warn('Warning: a fixed concentration is outside of the physiological boundaries!')
+            
+        i_comp = self._compounds.index(comp)
+        self._fixed_c[i_comp] = conc
+        
+        return self._fixed_c
 
