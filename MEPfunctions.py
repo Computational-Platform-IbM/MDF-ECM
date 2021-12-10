@@ -85,62 +85,19 @@ def animate_optimization(i: int, xlim: List[float], ylim: List[float], bac: Dict
         string: name of the file in which the figure is saved.
     """
 
-    filename = f'{directory}/{i}.png'
-    plt.savefig(filename)
-    plt.close()
+    # filename = f'{directory}/{i}.png'
+    # plt.savefig(filename)
+    # plt.close()
     
     #generate_gif(args)
 
-    return filename
+    return #filename
 
 
 # %%
 def generate_gif(args: Dict):
-    # load data from results file
-    with h5py.File(f'{directory}/results1D.mat', 'r') as f:
-        print('Loading results file...')
-        bac = {}
-        for k in f['bac_saved'].keys():
-            bac[k] = np.array(f['bac_saved'][k]).squeeze()
-            print(f'Loaded bac.{k}')
-
-    with h5py.File(simulation_file, 'r') as f:
-        print('Loading simulation file...')
-        grid = {}
-        for k in f['grid'].keys():
-            grid[k] = np.array(f['grid'][k]).squeeze()
-            print(f'Loaded grid.{k}')
-        dtBac = np.array(f['constants']['dT_bac']).squeeze()
-
     
-    # calculate boundaries for the plot
-    lastNonzero = np.max(np.nonzero(bac['nBacs']))
-    final_nBacs = bac['nBacs'][lastNonzero]
-    print(f'final number of bacteria: {final_nBacs}')
-    xlim = np.array([bac['x'][0:final_nBacs, lastNonzero].min() - 5*grid['dx'],
-                    bac['x'][0:final_nBacs, lastNonzero].max() + 5*grid['dx']])
-    ylim = np.array([bac['y'][0:final_nBacs, lastNonzero].min() - 5*grid['dy'],
-                    bac['y'][0:final_nBacs, lastNonzero].max() + 5*grid['dy']])
-    print(xlim, ylim)
-
-    # create figure per timepoint
-    filenames = []
-    for i in tqdm(range(lastNonzero), desc='Generation frames'):
-        if bac['nBacs'][i]:
-            filenames.append(save_plot(i, xlim, ylim, bac))
-
-    # build gif
-    with imageio.get_writer(f'{directory}/bacteria.gif', mode='I', fps=4) as writer:
-        for filename in tqdm(filenames, desc='Gif'):
-            image = imageio.imread(filename)
-            writer.append_data(image)
-
-   
-    # remove files afterwards
-    for filename in tqdm(set(filenames), desc='Removing images'):
-        os.remove(filename)
-
-    print('DONE!')
+    return
     
 #%% 
 
