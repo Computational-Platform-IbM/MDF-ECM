@@ -21,6 +21,7 @@ from datafile import (
 
 import scipy.stats
 from equilibrator_api import ComponentContribution, Q_
+from typing import Dict, List
 
 #%%
 
@@ -69,7 +70,7 @@ class Pathway_cc(object):
         self._compounds_copy = self._compounds.copy()
         self._stoich_copy = self._stoich.copy()
         
-        #default values, only actually relevant if H2 and CO2 in compounds
+        #default values
         self._pH2   = default_pH2   #atm
         self._pCO2   = default_pCO2   #atm
             
@@ -83,6 +84,8 @@ class Pathway_cc(object):
         #save involvement of ATP/ADP in separate array
         i_rATP = self._compounds.index('rATP')
         self._rATP_in_reaction = self._stoich[i_rATP,:]
+        self._netATP = self._S_netR[i_rATP]
+        self._S_netR_copy = self._S_netR.copy()
 
         #remove rATP from matrix and arrays
         self._compounds.pop(i_rATP)
@@ -90,8 +93,8 @@ class Pathway_cc(object):
         self._fixed_c = np.delete(self._fixed_c, i_rATP)
         self._element_comp = np.delete(self._element_comp, i_rATP, axis=0)
         self._S_netR = np.delete(self._S_netR, i_rATP)
-        #self._compound_ids = np.delete(self._compound_ids, i_rATP)
-        self._dGfprime = np.delete(self._dGfprime, i_rATP)
+
+        #self._dGfprime = np.delete(self._dGfprime, i_rATP)
         
         #get number of compounds and reactions in pathway
         self._Nc, self._Nr  = self._stoich.shape
@@ -283,4 +286,4 @@ class Pathway_cc(object):
         return self._balance_result
     
 
-
+    
