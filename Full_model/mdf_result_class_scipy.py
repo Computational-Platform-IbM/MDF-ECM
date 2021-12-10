@@ -94,6 +94,7 @@ class MDF_Result(object):
         fig = plt.figure(figsize=(13,9))
         plt.suptitle(self._netreaction_eq + '\n\n' + 
                      f'Overall reaction energy: {self._totaldG:.2f} kJ/mol' + 
+                     f'\n MDF = {max(self._dg_prime_opt):.2f} kJ/mol'  +
                      '\n\n' + conditions)
 
         #inidividual deltaG values of reactions
