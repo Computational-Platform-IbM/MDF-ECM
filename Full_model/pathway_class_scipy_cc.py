@@ -261,9 +261,20 @@ class Pathway_cc(object):
                 
         #first calculate dg0 values based on compound formation energies provided
         self._dg0 = self._stoich_copy.T @ self._dGfprime
+        
+        #save or get the dg0 of hydrogenase
+        if 'hyd' in self._reactions:
+            i_hyd = self._reactions.index('hyd')
+            
+            #normalize to production of 1 hydrogen: 2 fdred- + 2 H+ --> 2fdox + H2
+            i_H2 = self._compounds.index('H2')
+            self._dg0_hyd = self._dg0[i_hyd]/self._stoich[i_H2, i_hyd]
+            
+        else:
+            self._dg0_hyd = self.get_hyd_dg0()
             
         #save all dg0 values as attribute of the pathway object
-        return self._dg0
+        return self._dg0, self._dg0_hyd
     
     def check_element_balance(self):
         """     Function that checks the element and charge balance of the reactions.
@@ -286,4 +297,41 @@ class Pathway_cc(object):
         return self._balance_result
     
 
-    
+    def get_hyd_dg0(self):
+        #hydrogenase reaction
+        # 2 fdred- + 2 H+ --> 2fdox + H2
+        #components = [Fdred, Fdox, H2]
+        hyd_comps = ['kegg:C00138', 'kegg:C00139', 'bigg.metabolite:h2']
+        
+        hyd_S = [-2, 2, 1]
+        
+        cc = ComponentContribution()
+
+        # changing the aqueous environment parameters
+        cc.p_h = Q_(self._p_h)              
+        # cc.p_mg = Q_(3.0)                 # is default
+        # cc.ionic_strength = Q_("0.25M")   # is default
+        cc.temperature = Q_(f"{self._T}K")    
+        
+        # obtain a list of compound objects using `get_compound`
+        compound_list = [cc.get_compound(f"{c_id}") for c_id in list(hyd_comps)]
+
+        # appply standard_dg_formation on each one, and pool the results in 3 lists
+        standard_dgf_mu, sigmas_fin, sigmas_inf = zip(*map(cc.standard_dg_formation, compound_list))
+        standard_dgf_mu = np.array(standard_dgf_mu)
+        sigmas_fin = np.array(sigmas_fin)
+        sigmas_inf = np.array(sigmas_inf)
+
+        # we now apply the Legendre transform to convert from the standard ΔGf to the standard ΔG'f
+        delta_dgf_list = np.array([
+            cpd.transform(cc.p_h, cc.ionic_strength, cc.temperature, cc.p_mg).m_as("kJ/mol")
+            for cpd in compound_list ])
+        standard_dgf_prime_mu = standard_dgf_mu + delta_dgf_list
+        
+        #store physiological deltaG of formation of compounds
+        hyd_dGfs = standard_dgf_prime_mu
+        
+        #calculate dg0' of reaction
+        dG_hyd0 = hyd_S @ hyd_dGfs
+        
+        return dG_hyd0
