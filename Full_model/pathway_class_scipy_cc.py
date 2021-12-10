@@ -271,7 +271,7 @@ class Pathway_cc(object):
         else:
             self._dg0_hyd = self.get_hyd_dg0()
             
-        #save all dg0 values as attribute of the pathway object
+        #save all dg0 values as attribute of the pathway object and save dg0_hydrogenase reaction
         return self._dg0, self._dg0_hyd
     
     def check_element_balance(self):
