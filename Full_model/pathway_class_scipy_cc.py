@@ -93,8 +93,6 @@ class Pathway_cc(object):
         self._fixed_c = np.delete(self._fixed_c, i_rATP)
         self._element_comp = np.delete(self._element_comp, i_rATP, axis=0)
         self._S_netR = np.delete(self._S_netR, i_rATP)
-
-        #self._dGfprime = np.delete(self._dGfprime, i_rATP)
         
         #get number of compounds and reactions in pathway
         self._Nc, self._Nr  = self._stoich.shape
