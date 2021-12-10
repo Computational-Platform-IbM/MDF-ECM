@@ -70,38 +70,38 @@ class MDF_Analysis(Pathway_cc):
             #constraint: [H2O] = 1 M
             return np.exp(ln_conc[i_H2O]) - 1
 
-        def con_H2(ln_conc):
-            #get index of compound H2
-            i_H2 = self._compounds.index('H2')
+        # def con_H2(ln_conc):
+        #     #get index of compound H2
+        #     i_H2 = self._compounds.index('H2')
             
-            #Henry's law: p_i = H_i * c_i
-            #with units of H in [l*atm/mol]
-            #partial pressure proportional to mol fraction in liquid
-            #assumption: ideal mixture, low values of x_i
-            H_H2 = 1228         #l*atm/mol
-            cH2 = self._pH2/H_H2
-            #cH2 = 1e-3
+        #     #Henry's law: p_i = H_i * c_i
+        #     #with units of H in [l*atm/mol]
+        #     #partial pressure proportional to mol fraction in liquid
+        #     #assumption: ideal mixture, low values of x_i
+        #     H_H2 = 1228         #l*atm/mol
+        #     cH2 = self._pH2/H_H2
+        #     #cH2 = 1e-3
             
-            #constraint: [H2] is determined by Henry's law and hydrogen partial pressure
-            return np.exp(ln_conc[i_H2]) - cH2
+        #     #constraint: [H2] is determined by Henry's law and hydrogen partial pressure
+        #     return np.exp(ln_conc[i_H2]) - cH2
         
-        def con_CO2(ln_conc):
-            #get index of compound CO2
-            i_CO2 = self._compounds.index('CO2')
+        # def con_CO2(ln_conc):
+        #     #get index of compound CO2
+        #     i_CO2 = self._compounds.index('CO2')
             
-            #Henry's law: p_i = H_i * c_i
-            #with units of H in [l*atm/mol]
-            #partial pressure proportional to mol fraction in liquid
-            #assumption: ideal mixture, low values of x_i
-            H_CO2 = 1/0.037          #l*atm/mol
-            cCO2 = self._pCO2/H_CO2
+        #     #Henry's law: p_i = H_i * c_i
+        #     #with units of H in [l*atm/mol]
+        #     #partial pressure proportional to mol fraction in liquid
+        #     #assumption: ideal mixture, low values of x_i
+        #     H_CO2 = 1/0.037          #l*atm/mol
+        #     cCO2 = self._pCO2/H_CO2
             
-            ##TODO: smoothness of constraints? if/abs statements can create problems
-            if cCO2 > def_c_max:
-                cCO2 = def_c_max
+        #     ##TODO: smoothness of constraints? if/abs statements can create problems
+        #     if cCO2 > def_c_max:
+        #         cCO2 = def_c_max
             
-            #constraint: [H2] is determined by Henry's law and hydrogen partial pressure
-            return np.exp(ln_conc[i_CO2]) - cCO2
+        #     #constraint: [H2] is determined by Henry's law and hydrogen partial pressure
+        #     return np.exp(ln_conc[i_CO2]) - cCO2
 
         def con_NADH_EP(ln_conc):
             i_rNADH = self._compounds.index('rNADH')
@@ -142,35 +142,23 @@ class MDF_Analysis(Pathway_cc):
             return rNADPH - np.log(rNADPH_val)
 
         def con_Fd(ln_conc):
-            # dG' = - n F E'
-            # combine with dG' = dGo + RTln(P/S)
-            # Fd_ox + e- --> Fd_red-1
+            # Relate ratio of ferredoxin directly to hydrogen production
+            # Purpose of ferredoxin in cell: hydrogen production for electron sink
+            # 2 Fdred- + 2H+ --> 2 Fdox + H2
+            # Not too much energy available: state dG = 0
+            
+            #Get index of ferredoxin and value during optimization from ln_conc array
             i_rFd = self._compounds.index('rFd')
+            rFd = ln_conc[i_rFd]
             
-            n_Fd       = 1
-            E0      = -400e-3
-            dG0_Fd  = (-n_Fd*F*E0 )/1000  
-            
-            #values from Buckel & Thauer 2013
-            #Eprime  = -500e-3                       #V (J/C)
-            
-            #Set Eprime of Fd equal to that of hydrogen production
-            # 2 H+ + 2e- --> H2
-            # equation derived from dG' = - nFE'
-            # input dG' = dg0 + RT ln (P/S) and dg0 = -nFE0
-            n = 2
-            Eprime  = -414e-3 + ( (R*self._T)/(n*F) ) * ( ln_conc[self._compounds.index('H2')] - 2*np.log(10**(-self._p_h)) )    #V (J/C)
-            
-            #dg0_H2 = self._dGfprime[self._compounds.index('H2')]
-            
-            
-            dG_Fdprime = -n_Fd*F*Eprime/1000           #kJ
-            rFd_val = np.exp((dG_Fdprime - dG0_Fd)/(R*self._T))
+            ##TODO: show equation where this (x and y etc) is derived from
+            x = np.exp(- self._dg0_hyd/(R*self._T)) * ( 1 / np.exp( ln_conc[self._compounds.index('H2')] )  )
+            y = x**(1/2)
+            rFd_val = 1/y
             
             #save value as attribute
             self._rFd = rFd_val
-            
-            rFd = ln_conc[i_rFd]
+        
             return rFd - np.log(rFd_val)
 
         #create list of constraints
@@ -236,7 +224,7 @@ class MDF_Analysis(Pathway_cc):
             
             #set dg_prime as a function of dg0_prime and variables ln_conc
             dg_prime = self._dg0 + ( R*self._T * self._stoich.T @ ln_conc ) + ( R * self._T * self._rATP_in_reaction * np.log(rATP) )
-            
+                
             #the optimization target is the minimum driving force (mdf) of the pathway
             #mdf is the reaction with the least amount of driving force (so the highest value)
             mdf = max(dg_prime)
