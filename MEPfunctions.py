@@ -196,6 +196,7 @@ def comparison_plot(dgs: Dict, conc: Dict, mdf: List, key_info: List):
     #ax2.legend()
     
     ax3.title.set_text('Compound concentrations')
+    ax3.xaxis.set_ticks(plot_compounds)
     ax3.set_xticklabels(plot_compounds, fontsize=8, rotation=90)
     ax3.plot([0, len(plot_conc)], [10**-6, 10**-6], 'k-')
     ax3.plot([0, len(plot_conc)], [10**-2, 10**-2], 'k-')
