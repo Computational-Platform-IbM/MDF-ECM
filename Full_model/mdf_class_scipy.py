@@ -152,10 +152,22 @@ class MDF_Analysis(Pathway_cc):
             rFd = ln_conc[i_rFd]
             
             ##TODO: show equation where this (x and y etc) is derived from
-            x = np.exp(- self._dg0_hyd/(R*self._T)) * ( 1 / np.exp( ln_conc[self._compounds.index('H2')] )  )
-            y = x**(1/2)
-            rFd_val = 1/y
+            # x = np.exp(- self._dg0_hyd/(R*self._T)) * ( 1 / np.exp( ln_conc[self._compounds.index('H2')] )  )
+            # y = x**(1/2)
+            # rFd_val = 1/y
             
+            #Fd_ox+ + e- --> Fd_red-
+            
+            n       = 1
+            E0      = -400e-3
+            dG0_Fd  = (-n*F*E0 )/1000  
+            
+            #values from Buckel & Thauer 2013
+            Eprime  = -500e-3                       #V (J/C)
+            
+            dG_Fdprime = -n*F*Eprime/1000           #kJ
+            rFd_val = np.exp((dG_Fdprime - dG0_Fd)/(R*self._T))
+
             #save value as attribute
             self._rFd = rFd_val
         
