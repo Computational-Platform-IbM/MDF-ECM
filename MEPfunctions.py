@@ -144,7 +144,7 @@ def generate_gif(args: Dict):
     
 #%% 
 
-def comparison_plot(dgs: Dict, conc: Dict, mdf: List, key_info: List):
+def comparison_plot(dgs: Dict, conc: Dict, mdf: List, total_dG: List, key_info: List):
     netreaction_eq, compounds, reactions, dg0 = key_info
     
     colours = ['mediumblue', 'darkorchid', 'palevioletred', 
@@ -177,23 +177,24 @@ def comparison_plot(dgs: Dict, conc: Dict, mdf: List, key_info: List):
         
         plot_dg = [float(val) for val in list(dgs[i]['dg'].values())]
         
-        lab = ''
+        lab1 = f'Total $\Delta$G = {total_dG[i]:.2f} kJ/mol'
+        lab2 = ''
         
         for key in conc[i]:
             if key != 'conc':
-                lab += f'{key} = {conc[i][key]:.2e}, '
+                lab2 += f'\n {key} = {conc[i][key]:.2e}, '
         
-        lab += f'mdf = {mdf[i]} kJ/mol'
+        lab2 += f'\n MDF = {mdf[i]:.2f} kJ/mol'
         
-        ax2.plot(reactions, plot_dg, 'o', color = colours[i], label = lab)
-        ax3.plot(plot_compounds, plot_conc, 'o', color = colours[i], label = lab)
+        ax2.plot(reactions, plot_dg, 'o', color = colours[i], label = lab1)
+        ax3.plot(plot_compounds, plot_conc, 'o', color = colours[i], label = lab2)
         ax3.plot(plot_compounds, plot_conc, '--', color = colours[i],  alpha = 0.4)
 
     ax2.grid(True)
     ax3.grid(True)
     ax2.set_ylabel('$\Delta$G [kJ/mol]')
     ax2.set_xlabel('Reactions')
-    #ax2.legend()
+    ax2.legend()
     
     ax3.title.set_text('Compound concentrations')
     ax3.xaxis.set_ticks(plot_compounds)
