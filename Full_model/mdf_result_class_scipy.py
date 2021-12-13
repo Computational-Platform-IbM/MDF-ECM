@@ -27,7 +27,7 @@ class MDF_Result(object):
         self._S_netR = S_netR
         self._rATP_in_reaction = rATP_in_reaction
         self._T = T
-        self._p_h = pH
+        self._pH = pH
         self._ph2 = ph2
         self._p_co2 = pCO2
         self._maxCoA = maxCoA

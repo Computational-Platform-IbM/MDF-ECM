@@ -179,12 +179,12 @@ class Pathway_cc(object):
                  if S[j] < 0:
                      sub += f'{abs(S[j])} {self._compounds[j]} + '
                  if S[j] > 0:
-                    prod += f' {abs(S[j])} {self._compounds[j]} + '
+                    prod += f'{abs(S[j])} {self._compounds[j]} + '
                     
             sub = sub[0:-2]   #remove extra plus at the end for both sides of the reaction
             prod = prod[0:-2]
                 
-            eq = sub + '<-->' + prod
+            eq = sub + '<--> ' + prod
             equations[enz] = eq
         
         for key in equations.keys():
