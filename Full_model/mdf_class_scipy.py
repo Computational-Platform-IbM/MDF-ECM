@@ -156,10 +156,12 @@ class MDF_Analysis(Pathway_cc):
             # y = x**(1/2)
             # rFd_val = 1/y
             
-            #Fd_ox+ + e- --> Fd_red-
+            # Ratio based on electron potential
+            # Fd_ox + + e- --> Fd_red-
             
             n       = 1
-            E0      = -400e-3
+            #E0 determined from formation energy of Fd in eQ
+            E0      = -411e-3
             dG0_Fd  = (-n*F*E0 )/1000  
             
             #values from Buckel & Thauer 2013
@@ -230,7 +232,7 @@ class MDF_Analysis(Pathway_cc):
         
         def max_mdf(ln_conc):  
             i_Pi = self._compounds.index('Pi')
-            cH = 10**-self._p_h
+            cH = 10**-self._pH
             
             rATP = np.exp( (self._dGatp - self._dGatp0) / (R*self._T)) * np.exp(ln_conc[i_Pi]) * (cH)
             
@@ -286,7 +288,7 @@ class MDF_Analysis(Pathway_cc):
         opt_conc = np.exp(res.x)
         #dg_prime_opt = np.zeros(len(self._reactions))
 
-        rATP = np.exp( (self._dGatp - self._dGatp0) / (R*self._T)) * opt_conc[i_Pi] * (10**-self._p_h)
+        rATP = np.exp( (self._dGatp - self._dGatp0) / (R*self._T)) * opt_conc[i_Pi] * (10**-self._pH)
         dg_prime_opt = self._dg0 + ( R*self._T * self._stoich.T @ res.x ) + ( R * self._T * self._rATP_in_reaction * np.log(rATP) )
         
         i_rNADH = self._compounds.index('rNADH')
@@ -319,7 +321,7 @@ class MDF_Analysis(Pathway_cc):
                           self._S_netR, 
                           self._rATP_in_reaction,
                           self._T, 
-                          self._p_h, 
+                          self._pH, 
                           self._pH2, 
                           self._pCO2,
                           self._maxCoA, 

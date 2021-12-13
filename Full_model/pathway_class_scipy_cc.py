@@ -31,7 +31,7 @@ class Pathway_cc(object):
         """Create a Pathway object with default settings, importing the Pathway from an Excel sheet. """
         
         #initialize pathway with default values
-        self._p_h   = pH  
+        self._pH   = pH  
         self._T     = T     #K
         
         
@@ -100,11 +100,11 @@ class Pathway_cc(object):
     @property
     def p_h(self):
         """Get the pH."""
-        return self._p_h
+        return self._pH
 
     def set_p_h(self, value):
         """Set the pH."""
-        self._p_h = value
+        self._pH = value
         #if the pH is changed: update dGf' values and dg0 of reactions
         self.get_dGf_prime()
         self.calc_dG0_path()
@@ -202,7 +202,7 @@ class Pathway_cc(object):
         cc = ComponentContribution()
 
         # changing the aqueous environment parameters
-        cc.p_h = Q_(self._p_h)              
+        cc.p_h = Q_(self._pH)              
         # cc.p_mg = Q_(3.0)                 # is default
         # cc.ionic_strength = Q_("0.25M")   # is default
         cc.temperature = Q_(f"{self._T}K")    
@@ -306,7 +306,7 @@ class Pathway_cc(object):
         cc = ComponentContribution()
 
         # changing the aqueous environment parameters
-        cc.p_h = Q_(self._p_h)              
+        cc.p_h = Q_(self._pH)              
         # cc.p_mg = Q_(3.0)                 # is default
         # cc.ionic_strength = Q_("0.25M")   # is default
         cc.temperature = Q_(f"{self._T}K")    

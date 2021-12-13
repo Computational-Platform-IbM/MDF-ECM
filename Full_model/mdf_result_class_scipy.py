@@ -41,7 +41,7 @@ class MDF_Result(object):
         
         
         i_Pi = self._compounds.index('Pi')
-        cH = 10**-self._p_h
+        cH = 10**-self._pH
         self._rATP = np.exp( (self._dGatp - self._dGatp0) / (R*self._T)) * self._opt_conc[i_Pi] * (cH)
         
         #create string of net reaction to add to figure title
@@ -77,7 +77,7 @@ class MDF_Result(object):
         
         
         #create string of reaction conditions
-        conditions = f'pH = {self._p_h}'.expandtabs()
+        conditions = f'pH = {self._pH}'.expandtabs()
         comp_exceptions = ['H+', 'H2O', 'rNADH', 'rNADPH', 'rFd']
         
         for comp in comp_exceptions:
