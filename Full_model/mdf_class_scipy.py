@@ -298,6 +298,8 @@ class MDF_Analysis(Pathway_cc):
         sum_dg = sum(dg_prime_opt)
         
         overall_dg0 = self._S_netR_copy.T @ self._dGfprime
+        #multiply the overall reaction energy by the moles of substrate as the net reaction is normalized to 1
+        # and the sum of individual reaction energies is not!
         overall_dg_prime = (overall_dg0 + ( R*self._T * self._S_netR.T @ res.x ) + ( R * self._T * self._netATP * np.log(rATP) ) ) * abs(self._stoich[0,0])
         
         # #Floor values so that float precision does not matter as much
