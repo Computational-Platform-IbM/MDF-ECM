@@ -15,8 +15,8 @@ from datafile import R
 
 class MDF_Result(object):
     
-    def __init__(self, opt_conc, dg_prime_opt, overall_dg_prime, dG0_path, reactions, compounds, S_netR, rATP_in_reaction, 
-                 T, pH, ph2, pCO2, maxCoA, maxPi, rNADH, rNADPH, rFd, dGatp, dGatp0):
+    def __init__(self, opt_conc, dg_prime_opt, overall_dg_prime, dG0_path, reactions, compounds, fixed_c_names, S_netR, rATP_in_reaction, 
+                 T, pH, ph2, pCO2, maxCoA, maxPi, rNADH, rNADPH, rFd, dGatp, dGatp0, ATP_yield):
         
         self._opt_conc = opt_conc
         self._dg_prime_opt = dg_prime_opt
@@ -24,6 +24,7 @@ class MDF_Result(object):
         self._dg0 = dG0_path
         self._reactions = reactions
         self._compounds = compounds
+        self._fixed_c_names = fixed_c_names
         self._S_netR = S_netR
         self._rATP_in_reaction = rATP_in_reaction
         self._T = T
@@ -37,6 +38,7 @@ class MDF_Result(object):
         self._rFd = rFd
         self._dGatp = dGatp
         self._dGatp0 = dGatp0
+        self._yATP = ATP_yield
         
         
         
@@ -50,15 +52,15 @@ class MDF_Result(object):
         for j in range(len(self._S_netR)):
             if not self._compounds[j] == 'Pi':
                  if self._S_netR[j] < 0:
-                     sub += f'{abs(self._S_netR[j])} {self._compounds[j]} + '
+                     sub += f'{abs(self._S_netR[j]):.2f} {self._compounds[j]} + '
                  if self._S_netR[j] > 0:
-                    prod += f' {abs(self._S_netR[j])} {self._compounds[j]} + '
+                    prod += f' {abs(self._S_netR[j]):.2f} {self._compounds[j]} + '
         
-        ATP = sum(self._rATP_in_reaction)
-        if ATP > 0:
-            prod += f' {abs(ATP)} ATP +'
+        
+        if self._yATP > 0:
+            prod += f' {abs(self._yATP):.2f} ATP +'
         else:
-            sub += f' {abs(ATP)} ATP +'
+            sub += f' {abs(self._yATP):.2f} ATP +'
         
         sub = sub[0:-2]   #remove extra plus at the end for both sides of the reaction
         prod = prod[0:-2]
