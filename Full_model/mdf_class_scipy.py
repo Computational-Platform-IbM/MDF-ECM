@@ -300,10 +300,6 @@ class MDF_Analysis(Pathway_cc):
         overall_dg0 = self._S_netR_copy.T @ self._dGfprime
         overall_dg_prime = (overall_dg0 + ( R*self._T * self._S_netR.T @ res.x ) + ( R * self._T * self._netATP * np.log(rATP) ) ) * abs(self._stoich[0,0])
         
-        print(f'sum dg = {sum_dg}')
-        print(f'overall dg0 = {overall_dg0}')
-        print(f'overall dg = {overall_dg_prime}')
-        
         # #Floor values so that float precision does not matter as much
         # check = np.floor(sum_dg) - np.floor(overall_dg_prime)
         # #If the difference between the two floored values is not zero, something is wrong: raise error
