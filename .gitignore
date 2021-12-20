@@ -7,3 +7,5 @@ Full_model/run.py
 Full_model/glu_to_ac_no_ebif.py
 Full_model/run.py
 Full_model/glu_to_ac_ebif.py
+Excel stoich sheets/glu_to_ac_but_option2.xlsx
+Excel stoich sheets/glu_to_acetic_butyric.xlsx
