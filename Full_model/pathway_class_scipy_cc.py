@@ -40,7 +40,7 @@ class Pathway_cc(object):
         self._maxCoA    = 10e-3     #M
         
         #set default values for NADH/NAD+ and NADPH/NADP+
-        self._rNADH     = 0.05
+        self._rNADH     = None
         self._rNADPH    = None
         
         #set default values for ATP production
@@ -48,6 +48,8 @@ class Pathway_cc(object):
         self._dGatp     = default_dGatp
         
         self._rFd  = None
+        #dG of hydrogenase: amount of energy assumed to be available in the production of hydrogen
+        self._dGprime_hyd = -15
         
         #set default tolerance for solver
         self._tol_conc  = 1e-9
@@ -70,10 +72,11 @@ class Pathway_cc(object):
         self._compounds_copy = self._compounds.copy()
         self._stoich_copy = self._stoich.copy()
         
+        self._fixed_c_names = [self._compounds[i] for i in range(0, len(self._compounds)) if not np.isnan(self._fixed_c[i])]
+        
         #default values
         self._pH2   = default_pH2   #atm
         self._pCO2   = default_pCO2   #atm
-            
         
         #checks if the stoichiometry closes and automatically calculates dg0 values of all reactions
         self.check_element_balance()
@@ -151,12 +154,21 @@ class Pathway_cc(object):
         
     @property
     def maxCoA(self):
-        """Get the Pi pool."""
+        """Get the CoA pool."""
         return self._maxCoA
 
     def set_maxCoA(self, value):
-        """Set the Pi pool."""
+        """Set the CoA pool."""
         self._maxCoA = value
+        
+    @property
+    def dGprime_hyd(self):
+        """Get the dG of hydrogenase."""
+        return self._dGprime_hyd
+
+    def set_dGprime_hyd(self, value):
+        """Set the dG of hydrogenase."""
+        self._dGprime_hyd = value
         
     @property
     def dGatp(self):
@@ -250,6 +262,9 @@ class Pathway_cc(object):
             if c in ratios:
                 #if so: subtract the dGf' of the accompanying compound to get a relative dGf'
                 self._dGfprime[i] += - dgf_prime_rc[ratios.index(c)]
+        
+        self._dGf_rNADH = self._dGfprime[self._compounds.index('rNADH')]
+        self._dGf_Fd = self._dGfprime[self._compounds.index('rFd')]
                 
         return self._dGfprime
     
