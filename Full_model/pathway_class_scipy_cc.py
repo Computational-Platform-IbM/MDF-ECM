@@ -372,13 +372,25 @@ class Pathway_cc(object):
     
     def to_default(self):
         """ Set all values to default/initial values again """
-        self._T = self._init_values['T']
-        self._pH = self._init_values['pH']
+        #Check if temperature and pH have been changed
+        #if so: adjust them and update dGf' values
+        #updating dGf' is conditional because this takes some time, undesirable to do this everytime!
+        if self._T != self._init_values['T'] or self._pH != self._init_values['pH']:
+            self._T = self._init_values['T']
+            self._pH = self._init_values['pH']
+            
+            self.get_dGf_prime()
+            self.calc_dG0_path()
+        
+        #ensure fixed concentrations are back to the way they are in the excel sheet
         self._fixed_c = self._init_values['original fixed conc']
         
+        #set these parameters back to default values
         self._dGatp = default_dGatp
         self._maxPi = default_Pipool
         self._maxCoA = default_CoApool
+        
+        ##TODO: electron carriers?
         
         return
         
