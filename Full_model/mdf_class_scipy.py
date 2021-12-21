@@ -302,12 +302,12 @@ class MDF_Analysis(Pathway_cc):
         # and the sum of individual reaction energies is not!
         overall_dg_prime = (overall_dg0 + ( R*self._T * self._S_netR.T @ res.x ) + ( R * self._T * self._netATP * np.log(rATP) ) ) * abs(self._stoich[0,0])
         
-        # #Floor values so that float precision does not matter as much
-        # check = np.floor(sum_dg) - np.floor(overall_dg_prime)
-        # #If the difference between the two floored values is not zero, something is wrong: raise error
-        # if check != 0:
-        #     raise ValueError(
-        #         "The sum of reaction energies is not equal to the overall reaction energy!")
+        #Floor values so that float precision does not matter as much
+        check = np.floor(sum_dg) - np.floor(overall_dg_prime)
+        #If the difference between the two floored values is not zero, something is wrong: raise error
+        if check != 0:
+            raise ValueError(
+                "The sum of reaction energies is not equal to the overall reaction energy!")
        
 
         #create instance of MDF result class
