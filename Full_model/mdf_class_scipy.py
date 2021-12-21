@@ -309,12 +309,16 @@ class MDF_Analysis(Pathway_cc):
             raise ValueError(
                 "The sum of reaction energies is not equal to the overall reaction energy!")
        
+        ##TODO: disucss approach!
+        #normalize all reaction energies to 1 mol of substrate - to compare scenarios
+        dg_prime_opt = dg_prime_opt/abs(self._stoich[0,0])
+        plot_dg0 = self._dg0/abs(self._stoich[0,0])
 
         #create instance of MDF result class
         return MDF_Result(opt_conc, 
                           dg_prime_opt, 
-                          overall_dg_prime,
-                          self._dg0, 
+                          overall_dg_prime/abs(self._stoich[0,0]),
+                          plot_dg0, #self._dg0, 
                           self._reactions, 
                           self._compounds, 
                           self._fixed_c_names,
