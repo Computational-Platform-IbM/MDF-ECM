@@ -345,27 +345,6 @@ class MDF_Analysis(Pathway_cc):
     def set_solver_tol(self, value):
         """Set the solver tolerance."""
         self._tol_conc = value
-    
-    @property
-    def rNADH(self):
-        """Get the NADH/NAD+ ratio."""
-        return self._rNADH
-
-    def set_rNADH(self, value):
-        """Set the NADH/NAD+ ratio."""
-        self._rNADH = value
-        
-    @property
-    def rNADPH(self):
-        """Get the NADPH/NADP+ ratio."""
-        return self._rNADPH
-
-    def set_rNADPH(self, value):
-        """Set the NADPH/NADP+ ratio."""
-        self._rNADPH = value
-    
-    def to_default(self):
-        """ Set all values to default values again """
         
     def fix_compound_value(self, comp: str, conc: float):
         if conc > 10e-2 or conc < 1e-6:
