@@ -17,7 +17,9 @@ from datafile import (
     default_pH2,
     default_pCO2,
     dGatp0,
-    default_dGatp)
+    default_dGatp,
+    default_Pipool,
+    default_CoApool)
 
 import scipy.stats
 from equilibrator_api import ComponentContribution, Q_
@@ -33,11 +35,10 @@ class Pathway_cc(object):
         #initialize pathway with default values
         self._pH   = pH  
         self._T     = T     #K
-        
-        
+            
         #set default values for CoA and Pi pool
-        self._maxPi     = 20e-3     #M
-        self._maxCoA    = 10e-3     #M
+        self._maxPi     = default_Pipool
+        self._maxCoA    = default_CoApool
         
         #set default values for NADH/NAD+ and NADPH/NADP+
         self._rNADH     = None
@@ -68,6 +69,7 @@ class Pathway_cc(object):
          self._stoich, 
          self._rel_flux)     = importpath('\\' + filename)
         
+        self._init_values = {'T': T, 'pH': pH, 'original fixed conc': self._fixed_c}
         
         #create copy of list with all compounds and stoich matrix
         self._compounds_copy = self._compounds.copy()
@@ -179,6 +181,24 @@ class Pathway_cc(object):
     def set_dGatp(self, value):
         """Set the value of dGatp."""
         self._dGatp = value
+        
+    @property
+    def rNADH(self):
+        """Get the NADH/NAD+ ratio."""
+        return self._rNADH
+
+    def set_rNADH(self, value):
+        """Set the NADH/NAD+ ratio."""
+        self._rNADH = value
+        
+    @property
+    def rNADPH(self):
+        """Get the NADPH/NADP+ ratio."""
+        return self._rNADPH
+
+    def set_rNADPH(self, value):
+        """Set the NADPH/NADP+ ratio."""
+        self._rNADPH = value
     
     def printreactions(self):
         """ Print all pathway reactions, to see and check if the stoichiometric matrix was set up correctly. """
@@ -349,3 +369,17 @@ class Pathway_cc(object):
         dG_hyd0 = hyd_S @ hyd_dGfs
         
         return dG_hyd0
+    
+    def to_default(self):
+        """ Set all values to default/initial values again """
+        self._T = self._init_values['T']
+        self._pH = self._init_values['pH']
+        self._fixed_c = self._init_values['original fixed conc']
+        
+        self._dGatp = default_dGatp
+        self._maxPi = default_Pipool
+        self._maxCoA = default_CoApool
+        
+        return
+        
+        
