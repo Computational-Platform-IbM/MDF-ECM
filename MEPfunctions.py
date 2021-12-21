@@ -9,10 +9,10 @@ Created on Mon Sep 20 13:48:41 2021
 import numpy as np
 import pandas as pd
 import os
-import imageio
+#import imageio
 from typing import Dict, List
 import matplotlib.pyplot as plt
-import tqdm
+#import tqdm
 
 #%% import pathway info
 def importpath(filename):

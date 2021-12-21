@@ -68,6 +68,7 @@ class Pathway_cc(object):
          self._stoich, 
          self._rel_flux)     = importpath('\\' + filename)
         
+        
         #create copy of list with all compounds and stoich matrix
         self._compounds_copy = self._compounds.copy()
         self._stoich_copy = self._stoich.copy()
