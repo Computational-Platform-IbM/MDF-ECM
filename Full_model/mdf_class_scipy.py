@@ -21,7 +21,7 @@ import warnings
 #%%
 class MDF_Analysis(Pathway_cc):
     
-    def get_constraints(self, user_defined_rNADH = False):
+    def get_constraints(self, user_defined_rNADH = False, user_defined_rFd = False):
         
         def con_coApool(ln_conc):
             #totalCoA= total amount of compounds carrying CoA
@@ -172,6 +172,15 @@ class MDF_Analysis(Pathway_cc):
             self._rFd = rFd_val
         
             return rFd - np.log(rFd_val)
+        
+        def con_Fd_set(ln_conc):
+            i_rFd = self._compounds.index('rFd')
+            rFd = ln_conc[i_rFd]
+            
+            #Get the value that was set as rNADH from the attribute rNADH of the object
+            rFd_val = self._rFd
+            
+            return rFd - np.log(rFd_val)
 
         #create list of constraints
         cons = [{'type': 'eq', 'fun': con_coApool},
@@ -194,8 +203,13 @@ class MDF_Analysis(Pathway_cc):
         # if 'CO2' in self._compounds:
         #     cons += [{'type': 'eq', 'fun': con_CO2}]
         
+        #constraint for rFd conditions: is Fd involved and is the rFd value manually set or no
         if 'rFd' in self._compounds:
-           cons += [{'type': 'eq', 'fun': con_Fd}]
+            if user_defined_rFd == False:
+                cons += [{'type': 'eq', 'fun': con_Fd}]
+            else:
+                cons += [{'type': 'eq', 'fun': con_Fd_set}]
+                
             
         return cons
     
@@ -223,7 +237,7 @@ class MDF_Analysis(Pathway_cc):
         return bnds
     
     
-    def execute_mdf_basis(self, set_fixed_c=False, user_defined_rNADH = False, phys_bounds = False):
+    def execute_mdf_basis(self, set_fixed_c=False, user_defined_rNADH = False, user_defined_rFd = False, phys_bounds = False):
         """     Function to optimize for the MDF of the pathway.
                 Can be done with or without fixed concentrations for specific compounds. 
                 Default is without fixed concentrations or pathway energy.   """
@@ -257,7 +271,7 @@ class MDF_Analysis(Pathway_cc):
         bnds = tuple(bnds)
         
         #get constraints for scipy minimize
-        cons = self.get_constraints(user_defined_rNADH)
+        cons = self.get_constraints(user_defined_rNADH, user_defined_rFd)
         
         #initial values
         conc0 = [np.log(1e-4)] * self._Nc

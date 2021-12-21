@@ -200,6 +200,15 @@ class Pathway_cc(object):
         """Set the NADPH/NADP+ ratio."""
         self._rNADPH = value
     
+    @property
+    def rFd(self):
+        """Get the Fd_red-/Fd_ox ratio."""
+        return self._rFd
+
+    def set_rFd(self, value):
+        """Set the Fd_red-/Fd_ox ratio."""
+        self._rFd = value
+    
     def printreactions(self):
         """ Print all pathway reactions, to see and check if the stoichiometric matrix was set up correctly. """
         equations = {}
@@ -336,7 +345,7 @@ class Pathway_cc(object):
         # 2 fdred- + 2 H+ --> 2fdox + H2
         #components = [Fdred, Fdox, H2]
         hyd_comps = ['kegg:C00138', 'kegg:C00139', 'bigg.metabolite:h2']
-        
+        # 2 fdred- + 2 H+ --> 2fdox + H2
         hyd_S = [-2, 2, 1]
         
         cc = ComponentContribution()
