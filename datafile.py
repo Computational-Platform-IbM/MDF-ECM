@@ -22,3 +22,6 @@ default_pCO2    = 0.01                #atm
 dGatp0          = -8.15               #kJ/mol
 default_dGatp   = 50                  #kJ/mol
 
+default_Pipool  = 20e-3               #M
+default_CoApool = 10e-3               #M
+
