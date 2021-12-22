@@ -15,7 +15,6 @@ from datafile import (
     R)
 
 from pathway_class_scipy_cc import Pathway_cc
-from mdf_result_class_scipy import MDF_Result
 import warnings
 
 #%%
