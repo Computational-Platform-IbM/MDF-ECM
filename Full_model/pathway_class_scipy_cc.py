@@ -293,8 +293,10 @@ class Pathway_cc(object):
                 #if so: subtract the dGf' of the accompanying compound to get a relative dGf'
                 self._dGfprime[i] += - dgf_prime_rc[ratios.index(c)]
         
-        self._dGf_rNADH = self._dGfprime[self._compounds.index('rNADH')]
-        self._dGf_Fd = self._dGfprime[self._compounds.index('rFd')]
+        if 'rNADH' in self._compounds:
+            self._dGf_rNADH = self._dGfprime[self._compounds.index('rNADH')]
+        if 'rFd' in self._compounds:
+            self._dGf_Fd = self._dGfprime[self._compounds.index('rFd')]
                 
         return self._dGfprime
     
