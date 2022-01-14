@@ -77,12 +77,12 @@ class Equilibrium_Analysis(Pathway_cc):
             consCoA = totalCoA - self._maxCoA
             
             #create single array with equations that should all be equal to 0
-            y = [dg_prime, consPi, consCoA]
+            y = np.append(dg_prime, [consPi, consCoA])
             
             return y
         
         conc0 = [np.log(1e-4)] * len(self._compounds)
-        solve = root(find_conc, conc0, method='lm')
+        solve = root(find_conc, conc0, method='linearmixing')
 
         self._eq_result_conc = np.exp(solve.x)
 
