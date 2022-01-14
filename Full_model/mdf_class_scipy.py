@@ -188,11 +188,12 @@ class MDF_Analysis(Pathway_cc):
                 {'type': 'eq', 'fun': con_H2O}]
         
         #conditional additions to constraints
-        #if rNADH is NOT defined by user, but based on the electron potential
-        if user_defined_rNADH == False:
-            cons += [{'type': 'eq', 'fun': con_NADH_EP}]
-        else:
-            cons += [{'type': 'eq', 'fun': con_NADH_set}]
+        if 'rNADH' in self._compounds:
+            #if rNADH is NOT defined by user, but based on the electron potential
+            if user_defined_rNADH == False:
+                cons += [{'type': 'eq', 'fun': con_NADH_EP}]
+            else:
+                cons += [{'type': 'eq', 'fun': con_NADH_set}]
         #if the following compounds are actually in the metabolic network:
         if 'rNADPH' in self._compounds:
             cons += [{'type': 'eq', 'fun': con_NADPH}]
@@ -302,8 +303,9 @@ class MDF_Analysis(Pathway_cc):
         rATP = np.exp( (self._dGatp - self._dGatp0) / (R*self._T)) * opt_conc[i_Pi] * (10**-self._pH)
         dg_prime_opt = self._dg0 + ( R*self._T * self._stoich.T @ res.x ) + ( R * self._T * self._rATP_in_reaction * np.log(rATP) )
         
-        i_rNADH = self._compounds.index('rNADH')
-        self._rNADH = opt_conc[i_rNADH]
+        if 'rNADH' in self._compounds:
+            i_rNADH = self._compounds.index('rNADH')
+            self._rNADH = opt_conc[i_rNADH]
         
         if 'rNADPH' in self._compounds:
             self._rNADPH = opt_conc[self._compounds.index('rNADPH')]
