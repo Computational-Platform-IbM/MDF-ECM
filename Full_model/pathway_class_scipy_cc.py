@@ -48,7 +48,7 @@ class Pathway_cc(object):
         self._dGatp0    = dGatp0
         self._dGatp     = default_dGatp
         
-        self._rFd  = None
+        self._rFd  = 1
         #dG of hydrogenase: amount of energy assumed to be available in the production of hydrogen
         self._dGprime_hyd = -15
         
@@ -335,7 +335,7 @@ class Pathway_cc(object):
         #save balance as attribute of class
         self._balance_result = check
         
-        if not np.all(check == 0):
+        if not np.all(check <= 10e-12):
             raise ValueError(
                 "One or more of the element and charge balances does not close! Check your reactions.")
         
