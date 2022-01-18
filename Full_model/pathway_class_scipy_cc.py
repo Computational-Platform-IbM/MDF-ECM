@@ -71,6 +71,9 @@ class Pathway_cc(object):
         
         self._init_values = {'T': T, 'pH': pH, 'original fixed conc': self._fixed_c}
         
+        #check for reactions that have all coefficients zero and remove them
+        self.check_empty_reactions()
+        
         #create copy of list with all compounds and stoich matrix
         self._compounds_copy = self._compounds.copy()
         self._stoich_copy = self._stoich.copy()
@@ -320,6 +323,38 @@ class Pathway_cc(object):
             
         #save all dg0 values as attribute of the pathway object and save dg0_hydrogenase reaction
         return self._dg0, self._dg0_hyd
+    
+    def check_empty_reactions(self):
+        #create empty list to store indices of empty columns
+        empty = []
+        
+        #loop through all columns (reactions) to check for reactions that have all coefficients zero
+        for i in range(0, self._stoich.shape[1]):
+            if np.all(self._stoich[:,i] == 0):
+                empty += [i]
+                
+        #delete empty columns from stoich matrix, from reactions list and rel_flux array
+        self._stoich        = np.delete(self._stoich, empty, axis=1)
+        self._reactions     = [r for r in self._reactions if self._reactions.index(r) not in empty]
+        self._rel_flux      = np.delete(self._rel_flux, empty)
+        
+        #now check for compounds that are not used
+        #update empty list to store indices of empty rows
+        empty = []
+        
+        #loop through all rows (compounds) to check for compounds that are not used/produced in any reaction
+        for j in range(0, self._stoich.shape[0]):
+            if np.all(self._stoich[j,:] == 0):
+                empty += [j]
+        
+        self._stoich        = np.delete(self._stoich, empty, axis=0)
+        self._compounds     = [c for c in self._compounds if self._compounds.index(c) not in empty]
+        self._element_comp  = np.delete(self._element_comp, empty, axis=0)
+        self._fixed_c       = np.delete(self._fixed_c, empty) 
+        self._compound_ids  = np.delete(self._compound_ids, empty) 
+        self._S_netR        = np.delete(self._S_netR, empty)
+                
+        return 
     
     def check_element_balance(self):
         """     Function that checks the element and charge balance of the reactions.
