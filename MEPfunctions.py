@@ -33,7 +33,7 @@ def importpath(filename):
 
     data_ar = np.array(data_ar, dtype=np.float64)
 
-    #make sure no empty columns are included in the matrix
+    #make sure no empty columns are included at the end of the matrix
     empty = True
     i_empty = 0
     while empty == True:
@@ -149,6 +149,9 @@ def comparison_plot(dgs: Dict, conc: Dict, mdf: List, total_dG: List, key_info: 
 
     ax2.grid(True)
     ax3.grid(True)
+    
+    ax2.xaxis.set_ticks(reactions)
+    ax2.set_xticklabels(reactions, fontsize=8, rotation=90)
     ax2.set_ylabel('$\Delta$G [kJ/mol]')
     ax2.set_xlabel('Reactions')
     ax2.legend()
