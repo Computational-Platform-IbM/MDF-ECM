@@ -254,7 +254,7 @@ class Pathway_cc(object):
         
         # obtain a list of compound objects using `get_compound`
         compound_list = [cc.get_compound(f"{c_id}") for c_id in list(self._compound_ids)]
-
+        
         # appply standard_dg_formation on each one, and pool the results in 3 lists
         standard_dgf_mu, sigmas_fin, sigmas_inf = zip(*map(cc.standard_dg_formation, compound_list))
         standard_dgf_mu = np.array(standard_dgf_mu)
@@ -297,9 +297,9 @@ class Pathway_cc(object):
                 self._dGfprime[i] += - dgf_prime_rc[ratios.index(c)]
         
         if 'rNADH' in self._compounds:
-            self._dGf_rNADH = self._dGfprime[self._compounds.index('rNADH')]
+            self._dGf_rNADH = self._dGfprime[self._compounds_copy.index('rNADH')]
         if 'rFd' in self._compounds:
-            self._dGf_Fd = self._dGfprime[self._compounds.index('rFd')]
+            self._dGf_Fd = self._dGfprime[self._compounds_copy.index('rFd')]
                 
         return self._dGfprime
     
