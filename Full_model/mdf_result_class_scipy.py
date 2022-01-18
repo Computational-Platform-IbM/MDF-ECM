@@ -8,6 +8,7 @@ Created on Tue Oct  5 16:15:38 2021
 #%%
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 
 from datafile import R
 
@@ -82,15 +83,15 @@ class MDF_Result(object):
         
         #create string of reaction conditions
         conditions = f'pH = {self._pH}'.expandtabs()
-        comp_exceptions = ['H+', 'H2O', 'rNADH', 'rNADPH', 'rFd']
+        comp_exceptions = ['H2O', 'rNADH', 'rNADPH', 'rFd', 'CO2', 'H2']
         
         for comp in comp_exceptions:
             if comp in self._compounds and comp != 'H2O':
-                if comp == 'H2':
-                    conditions += f'\t pH2 = {self._ph2} atm'.expandtabs()
-                else:
+                if comp[0] == 'r':
                     i = self._compounds.index(comp)
                     conditions += f'\t {comp} = {self._opt_conc[i]:.3f}'.expandtabs()
+                else:
+                    conditions += f'\t [{comp}] = {self._opt_conc[i]:.2e} M'.expandtabs()
 
         conditions += f'\t Pi-pool = {self._maxPi:.2f} M \t CoA-pool = {self._maxCoA:.2f} M'.expandtabs()
         
@@ -124,17 +125,30 @@ class MDF_Result(object):
                 
         ax3 = fig.add_subplot(212)
         ax3.title.set_text('Compound concentrations')
-        ax3.plot(plot_compounds, plot_conc, 'bo')
+        
+        col = ['b']*len(plot_compounds)
+        
+        for i, c in enumerate(plot_compounds):
+            if c in self._fixed_c_names:
+                col[i] = 'r'
+        
+        for i in range(len(plot_compounds)):
+            ax3.scatter(plot_compounds[i], plot_conc[i], c=col[i])
+            
         ax3.plot(plot_compounds, plot_conc, 'b--', alpha =0.4)
         ax3.grid()
         ax3.set_ylabel('Concentration [M]')
         ax3.set_xlabel('Compounds')
         ax3.xaxis.set_ticks(plot_compounds)
         ax3.set_xticklabels(plot_compounds, fontsize=8, rotation=90)
-        #ax3.set_ylim(10**-7, 10**-1)
         ax3.plot([0, len(plot_conc)], [10**-6, 10**-6], 'k-')
         ax3.plot([0, len(plot_conc)], [10**-2, 10**-2], 'k-')
         ax3.set_yscale('log')
+        
+        legend_elements = [Line2D([0], [0], marker='o', color='w', markerfacecolor='b', label='Opt. conc.', markersize=7),
+                           Line2D([0], [0], marker='o', color='w', markerfacecolor='r', label='Fixed conc.', markersize=7)]
+
+        ax3.legend(handles=legend_elements, loc='upper right')
 
         plt.tight_layout()
         
