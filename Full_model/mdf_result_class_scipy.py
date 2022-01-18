@@ -51,11 +51,13 @@ class MDF_Result(object):
         prod = ''
         for j in range(len(self._S_netR)):
             if not self._compounds[j] == 'Pi':
-                 if self._S_netR[j] < 0:
-                     sub += f'{abs(self._S_netR[j]):.2f} {self._compounds[j]} + '
-                 if self._S_netR[j] > 0:
-                    prod += f' {abs(self._S_netR[j]):.2f} {self._compounds[j]} + '
-        
+                 #to account for round-off errors: values to are ~0 should not be included in the reaction
+                 if abs(self._S_netR[j]) > 1e-9:
+                     if self._S_netR[j] < 0:
+                         sub += f'{abs(self._S_netR[j]):.2f} {self._compounds[j]} + '
+                     if self._S_netR[j] > 0:
+                        prod += f' {abs(self._S_netR[j]):.2f} {self._compounds[j]} + '
+            
         
         if self._yATP > 0:
             prod += f' {abs(self._yATP):.2f} ATP +'
