@@ -25,6 +25,9 @@ import scipy.stats
 from equilibrator_api import ComponentContribution, Q_
 from typing import Dict, List
 
+import warnings
+warnings.filterwarnings("ignore", category=RuntimeWarning) 
+
 #%%
 
 class Pathway_cc(object):
@@ -33,27 +36,30 @@ class Pathway_cc(object):
         """Create a Pathway object with default settings, importing the Pathway from an Excel sheet. """
         
         #initialize pathway with default values
-        self._pH   = pH  
-        self._T     = T     #K
+        self._pH        = pH  
+        self._T         = T     #K
             
         #set default values for CoA and Pi pool
         self._maxPi     = default_Pipool
         self._maxCoA    = default_CoApool
         
-        #set default values for NADH/NAD+ and NADPH/NADP+
+        #set default values for NADH/NAD+, NADPH/NADP+ and Fd_red/Fd_ox
         self._rNADH     = None
         self._rNADPH    = None
+        self._rFd       = 1
         
         #set default values for ATP production
         self._dGatp0    = dGatp0
         self._dGatp     = default_dGatp
         
-        self._rFd  = 1
+        
         #dG of hydrogenase: amount of energy assumed to be available in the production of hydrogen
-        self._dGprime_hyd = -15
+        self._dGprime_hyd       = -2    #kJ/mol
+        #dG of hydABC complex: amount of energy assumed to be available in the HydABC e-bif reaction
+        self._dGprime_hydABC    = -2    #kJ/mol
         
         #set default tolerance for solver
-        self._tol_conc  = 1e-9
+        self._tol_conc    = 1e-9
         
         #if excel extension not included in filename, add it to open the file
         if not filename[-5:] == '.xlsx':
@@ -67,22 +73,23 @@ class Pathway_cc(object):
          self._compound_ids, 
          self._S_netR, 
          self._stoich, 
-         self._rel_flux)     = importpath('\\' + filename)
+         self._rel_flux)        = importpath('\\' + filename)
         
-        self._init_values = {'T': T, 'pH': pH, 'original fixed conc': self._fixed_c}
+        self._init_values       = {'T': T, 'pH': pH, 'original fixed conc': self._fixed_c}
         
         #check for reactions that have all coefficients zero and remove them
         self.check_empty_reactions()
         
         #create copy of list with all compounds and stoich matrix
-        self._compounds_copy = self._compounds.copy()
-        self._stoich_copy = self._stoich.copy()
+        self._compounds_copy    = self._compounds.copy()
+        self._stoich_copy       = self._stoich.copy()
         
-        self._fixed_c_names = [self._compounds[i] for i in range(0, len(self._compounds)) if not np.isnan(self._fixed_c[i])]
+        #save compound names that have a fixed concentration in the excel sheet
+        self._fixed_c_names     = [self._compounds[i] for i in range(0, len(self._compounds)) if not np.isnan(self._fixed_c[i])]
         
         #default values
-        self._pH2   = default_pH2   #atm
-        self._pCO2   = default_pCO2   #atm
+        self._pH2               = default_pH2       # atm
+        self._pCO2              = default_pCO2      # atm
         
         #checks if the stoichiometry closes and automatically calculates dg0 values of all reactions
         self.check_element_balance()
@@ -91,17 +98,17 @@ class Pathway_cc(object):
         
         #after calculating dg0 of the pathway reactions, remove rATP from the stoichiometric matrix etc
         #save involvement of ATP/ADP in separate array
-        i_rATP = self._compounds.index('rATP')
-        self._rATP_in_reaction = self._stoich[i_rATP,:]
-        self._netATP = self._S_netR[i_rATP]
-        self._S_netR_copy = self._S_netR.copy()
+        i_rATP                  = self._compounds.index('rATP')
+        self._rATP_in_reaction  = self._stoich[i_rATP,:]
+        self._netATP            = self._S_netR[i_rATP]
+        self._S_netR_copy       = self._S_netR.copy()
 
         #remove rATP from matrix and arrays
         self._compounds.pop(i_rATP)
-        self._stoich = np.delete(self._stoich, i_rATP, axis=0)
-        self._fixed_c = np.delete(self._fixed_c, i_rATP)
-        self._element_comp = np.delete(self._element_comp, i_rATP, axis=0)
-        self._S_netR = np.delete(self._S_netR, i_rATP)
+        self._stoich            = np.delete(self._stoich, i_rATP, axis=0)
+        self._fixed_c           = np.delete(self._fixed_c, i_rATP)
+        self._element_comp      = np.delete(self._element_comp, i_rATP, axis=0)
+        self._S_netR            = np.delete(self._S_netR, i_rATP)
         
         #get number of compounds and reactions in pathway
         self._Nc, self._Nr  = self._stoich.shape
@@ -114,11 +121,11 @@ class Pathway_cc(object):
     def set_p_h(self, value):
         """Set the pH."""
         self._pH = value
+        
         #if the pH is changed: update dGf' values and dg0 of reactions
         self.get_dGf_prime()
         self.calc_dG0_path()
-        
-        
+              
     @property
     def p_h2(self):
         """Get the partial pressure of hydrogen."""
@@ -145,6 +152,7 @@ class Pathway_cc(object):
     def set_T(self, value):
         """Set the temperature."""
         self._T = value
+        
         #if the temperature is changed: update dGf' values and dg0 of reactions
         self.get_dGf_prime()
         self.calc_dG0_path()
@@ -247,19 +255,19 @@ class Pathway_cc(object):
         cc = ComponentContribution()
 
         # changing the aqueous environment parameters
-        cc.p_h = Q_(self._pH)              
-        # cc.p_mg = Q_(3.0)                 # is default
-        # cc.ionic_strength = Q_("0.25M")   # is default
-        cc.temperature = Q_(f"{self._T}K")    
+        cc.p_h              = Q_(self._pH)              
+        # cc.p_mg           = Q_(3.0)                   # is default
+        # cc.ionic_strength = Q_("0.25M")               # is default
+        cc.temperature      = Q_(f"{self._T}K")    
         
         # obtain a list of compound objects using `get_compound`
         compound_list = [cc.get_compound(f"{c_id}") for c_id in list(self._compound_ids)]
         
         # appply standard_dg_formation on each one, and pool the results in 3 lists
         standard_dgf_mu, sigmas_fin, sigmas_inf = zip(*map(cc.standard_dg_formation, compound_list))
-        standard_dgf_mu = np.array(standard_dgf_mu)
-        sigmas_fin = np.array(sigmas_fin)
-        sigmas_inf = np.array(sigmas_inf)
+        standard_dgf_mu                         = np.array(standard_dgf_mu)
+        sigmas_fin                              = np.array(sigmas_fin)
+        sigmas_inf                              = np.array(sigmas_inf)
 
         # we now apply the Legendre transform to convert from the standard ΔGf to the standard ΔG'f
         delta_dgf_list = np.array([
@@ -272,6 +280,7 @@ class Pathway_cc(object):
         
         #now account for ratio compounds: generate 'relative' dGf'
         ratios = ['rNADH', 'rNADPH', 'rFd', 'rATP']
+        
         #ids of oxidized versions e-carries + ADP, same order as in ratios
         accompanying_c_id = ['bigg.metabolite:nad', 'bigg.metabolite:nadp', 'kegg:C00139', 'bigg.metabolite:adp']
         
@@ -280,9 +289,9 @@ class Pathway_cc(object):
 
         # appply standard_dg_formation on each one, and pool the results in 3 lists
         dgf_mu_rc, sigmas_fin_rc, sigmas_inf_rc = zip(*map(cc.standard_dg_formation, r_compounds_list))
-        dgf_mu_rc = np.array(dgf_mu_rc)
-        sigmas_fin_rc = np.array(sigmas_fin_rc)
-        sigmas_inf_rc = np.array(sigmas_inf_rc)
+        dgf_mu_rc                               = np.array(dgf_mu_rc)
+        sigmas_fin_rc                           = np.array(sigmas_fin_rc)
+        sigmas_inf_rc                           = np.array(sigmas_inf_rc)
 
         # we now apply the Legendre transform to convert from the standard ΔGf to the standard ΔG'f
         delta_dgf_r_list = np.array([
@@ -296,10 +305,13 @@ class Pathway_cc(object):
                 #if so: subtract the dGf' of the accompanying compound to get a relative dGf'
                 self._dGfprime[i] += - dgf_prime_rc[ratios.index(c)]
         
+        #save the relative formation energies
         if 'rNADH' in self._compounds:
-            self._dGf_rNADH = self._dGfprime[self._compounds_copy.index('rNADH')]
+            self._dGf_rNADH     = self._dGfprime[self._compounds_copy.index('rNADH')]
+        if 'rNADPH' in self._compounds:
+            self._dGf_rNADPH    = self._dGfprime[self._compounds_copy.index('rNADPH')]
         if 'rFd' in self._compounds:
-            self._dGf_Fd = self._dGfprime[self._compounds_copy.index('rFd')]
+            self._dGf_rFd       = self._dGfprime[self._compounds_copy.index('rFd')]
                 
         return self._dGfprime
     
@@ -370,6 +382,7 @@ class Pathway_cc(object):
         #save balance as attribute of class
         self._balance_result = check
         
+        #matrix should be all (almost) equal to zero
         if not np.all(check <= 10e-12):
             raise ValueError(
                 "One or more of the element and charge balances does not close! Check your reactions.")
@@ -388,19 +401,17 @@ class Pathway_cc(object):
         cc = ComponentContribution()
 
         # changing the aqueous environment parameters
-        cc.p_h = Q_(self._pH)              
-        # cc.p_mg = Q_(3.0)                 # is default
-        # cc.ionic_strength = Q_("0.25M")   # is default
-        cc.temperature = Q_(f"{self._T}K")    
+        cc.p_h          = Q_(self._pH)              
+        cc.temperature  = Q_(f"{self._T}K")    
         
         # obtain a list of compound objects using `get_compound`
-        compound_list = [cc.get_compound(f"{c_id}") for c_id in list(hyd_comps)]
+        compound_list   = [cc.get_compound(f"{c_id}") for c_id in list(hyd_comps)]
 
         # appply standard_dg_formation on each one, and pool the results in 3 lists
         standard_dgf_mu, sigmas_fin, sigmas_inf = zip(*map(cc.standard_dg_formation, compound_list))
-        standard_dgf_mu = np.array(standard_dgf_mu)
-        sigmas_fin = np.array(sigmas_fin)
-        sigmas_inf = np.array(sigmas_inf)
+        standard_dgf_mu                         = np.array(standard_dgf_mu)
+        sigmas_fin                              = np.array(sigmas_fin)
+        sigmas_inf                              = np.array(sigmas_inf)
 
         # we now apply the Legendre transform to convert from the standard ΔGf to the standard ΔG'f
         delta_dgf_list = np.array([
@@ -409,10 +420,10 @@ class Pathway_cc(object):
         standard_dgf_prime_mu = standard_dgf_mu + delta_dgf_list
         
         #store physiological deltaG of formation of compounds
-        hyd_dGfs = standard_dgf_prime_mu
+        hyd_dGfs    = standard_dgf_prime_mu
         
         #calculate dg0' of reaction
-        dG_hyd0 = hyd_S @ hyd_dGfs
+        dG_hyd0     = hyd_S @ hyd_dGfs
         
         return dG_hyd0
     
@@ -432,9 +443,9 @@ class Pathway_cc(object):
         self._fixed_c = self._init_values['original fixed conc']
         
         #set these parameters back to default values
-        self._dGatp = default_dGatp
-        self._maxPi = default_Pipool
-        self._maxCoA = default_CoApool
+        self._dGatp     = default_dGatp
+        self._maxPi     = default_Pipool
+        self._maxCoA    = default_CoApool
         
         ##TODO: electron carriers?
         
