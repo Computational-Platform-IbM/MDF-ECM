@@ -21,7 +21,7 @@ import warnings
 #%%
 class MDF_Analysis(Pathway_cc):
     
-    def get_constraints(self, user_defined_rNADH = False, user_defined_rFd = False):
+    def get_constraints(self, user_defined_rNADH, user_defined_rNADPH, user_defined_rFd):
         
         def con_coApool(ln_conc):
             #totalCoA= total amount of compounds carrying CoA
@@ -106,12 +106,8 @@ class MDF_Analysis(Pathway_cc):
         def con_NADH_EP(ln_conc):
             i_rNADH = self._compounds.index('rNADH')
             
-            #NAD+ + 2e- + H+ --> NADH
-            
+            #NAD+ + 2e- + H+ --> NADH           
             n       = 2
-            E0      = -320e-3
-            dG0_NADH  = (-n*F*E0 )/1000 
-            
             #values from Buckel & Thauer 2013
             Eprime  = -280e-3                       #V (J/C)
             
@@ -129,17 +125,39 @@ class MDF_Analysis(Pathway_cc):
             i_rNADH = self._compounds.index('rNADH')
             rNADH = ln_conc[i_rNADH]
             
-            #Get the value that was set as rNADH from the attribute rNADH of the object
-            rNADH_val = self._rNADH
+            #value used in optimization should be the same as the value of the attribute that is set by the user
+            if self._rNADH == None:
+                raise ValueError(
+                    "No set value for rNADH was found.")
+            return rNADH - np.log(self._rNADH)
+        
+        def con_NADPH_EP(ln_conc):
+            i_rNADPH = self._compounds.index('rNADPH')
             
-            return rNADH - np.log(rNADH_val)
+            #NADP+ + 2e- + H+ --> NADPH
+            n       = 2
+            #values from Buckel & Thauer 2013
+            Eprime  = -380e-3                       #V (J/C)
+            
+            dG_NADPHprime   = -n*F*Eprime/1000           #kJ
+            rNADPH_val      = np.exp((dG_NADPHprime - self._dGf_rNADPH)/(R*self._T))
+            
+            rNADPH = ln_conc[i_rNADPH]
+            
+            #store rNADH value from electron potential
+            self._rNADPH = rNADPH_val
+            
+            return rNADPH - np.log(rNADPH_val)
 
-        def con_NADPH(ln_conc):
+        def con_NADPH_set(ln_conc):
             i_rNADPH = self._compounds.index('NADPH')    
             rNADPH = ln_conc[i_rNADPH]
            
-            rNADPH_val = self._rNADPH
-            return rNADPH - np.log(rNADPH_val)
+            #value used in optimization should be the same as the value of the attribute that is set by the user
+            if self._rNADPH == None:
+                raise ValueError(
+                    "No set value for rNADPH was found.")
+            return rNADPH - np.log(self._rNADPH)
 
         def con_Fd(ln_conc):            
             #Get index of ferredoxin and value during optimization from ln_conc array
@@ -164,7 +182,7 @@ class MDF_Analysis(Pathway_cc):
             # Eprime  = -500e-3                       #V (J/C)
             
             # dG_Fdprime = -n*F*Eprime/1000           #kJ
-            # rFd_val = np.exp((dG_Fdprime - self._dGf_Fd)/(R*self._T))
+            # rFd_val = np.exp((dG_Fdprime - self._dGf_rFd)/(R*self._T))
             # print(rFd_val)
             
             rFd_val = 1
@@ -194,15 +212,14 @@ class MDF_Analysis(Pathway_cc):
                 cons += [{'type': 'eq', 'fun': con_NADH_EP}]
             else:
                 cons += [{'type': 'eq', 'fun': con_NADH_set}]
-        #if the following compounds are actually in the metabolic network:
-        if 'rNADPH' in self._compounds:
-            cons += [{'type': 'eq', 'fun': con_NADPH}]
         
-        #Lines below commented for now: not using partial pressure! It's about the liquid phase
-        # if 'H2' in self._compounds:
-        #     cons += [{'type': 'eq', 'fun': con_H2}]
-        # if 'CO2' in self._compounds:
-        #     cons += [{'type': 'eq', 'fun': con_CO2}]
+        #if NADPH is actually in the metabolic network:
+        if 'rNADPH' in self._compounds:
+            #when rNADPH is NOT defined by user, it's based on the electron potential ('EP')
+            if user_defined_rNADPH == False:
+                cons += [{'type': 'eq', 'fun': con_NADPH_EP}]
+            else:
+                cons += [{'type': 'eq', 'fun': con_NADPH_set}]
         
         #constraint for rFd conditions: is Fd involved and is the rFd value manually set or no
         if 'rFd' in self._compounds:
@@ -211,7 +228,12 @@ class MDF_Analysis(Pathway_cc):
             else:
                 cons += [{'type': 'eq', 'fun': con_Fd_set}]
                 
-            
+        #TODO: Lines below commented for now: not using partial pressure! It's about the liquid phase
+        # if 'H2' in self._compounds:
+        #     cons += [{'type': 'eq', 'fun': con_H2}]
+        # if 'CO2' in self._compounds:
+        #     cons += [{'type': 'eq', 'fun': con_CO2}]
+        
         return cons
     
     def get_bounds(self, phys_bounds = False):
@@ -238,7 +260,7 @@ class MDF_Analysis(Pathway_cc):
         return bnds
     
     
-    def execute_mdf_basis(self, set_fixed_c=False, user_defined_rNADH = False, user_defined_rFd = False, phys_bounds = False):
+    def execute_mdf_basis(self, set_fixed_c=False, user_defined_rNADH = False, user_defined_rNADPH = False, user_defined_rFd = False, phys_bounds = False):
         """     Function to optimize for the MDF of the pathway.
                 Can be done with or without fixed concentrations for specific compounds. 
                 Default is without fixed concentrations or pathway energy.   """
@@ -272,7 +294,7 @@ class MDF_Analysis(Pathway_cc):
         bnds = tuple(bnds)
         
         #get constraints for scipy minimize
-        cons = self.get_constraints(user_defined_rNADH, user_defined_rFd)
+        cons = self.get_constraints(user_defined_rNADH, user_defined_rNADPH, user_defined_rFd)
         
         #initial values
         conc0 = [np.log(1e-4)] * self._Nc
