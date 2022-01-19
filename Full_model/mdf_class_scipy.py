@@ -164,16 +164,34 @@ class MDF_Analysis(Pathway_cc):
             i_rFd = self._compounds.index('rFd')
             rFd = ln_conc[i_rFd]
             
-            ##TODO: show equation where this (x and y etc) is derived from
-            # Relate ratio of ferredoxin directly to hydrogen production
-            # Purpose of ferredoxin in cell: hydrogen production for electron sink
-            # 2 Fdred- + 2H+ --> 2 Fdox + H2
-            # Not too much energy available: state dG = 0
-            # x = np.exp( (self._dGprime_hyd - self._dg0_hyd) /(R*self._T)) * ( 1 / np.exp( ln_conc[self._compounds.index('H2')] )  )
-            # y = x**(1/2)
-            # rFd_val = 1/y
-            
-            # print(self._dGprime_hyd, self._dg0_hyd)
+            ##TODO: show equation where this (x and y etc) is derived from           
+            if 'HydABC' or 'hydABC' in self._reactions:
+                # Relate ratio of ferredoxin directly to hydrogen production through ebif reaction (HydABC complex)
+                # Purpose of ferredoxin in cell: hydrogen production for electron sink
+                # 2 Fdred- + NADH + 3H+ --> 2 Fdox + NAD+ + 2 H2
+                # Energy available: related to self._dGprime_hydABC
+                
+                #NAD+ + 2e- + H+ --> NADH           
+                n       = 2
+                #values from Buckel & Thauer 2013
+                Eprime  = -280e-3                       #V (J/C)
+                
+                dG_NADHprime = -n*F*Eprime/1000           #kJ
+                rNADH_val = np.exp((dG_NADHprime - self._dGf_rNADH)/(R*self._T))
+                
+                x = np.exp( (self._dGprime_hydABC - self._dg0_hydABC) /(R*self._T)) * ( rNADH_val  / (np.exp( ln_conc[self._compounds.index('H2')] )**2)  )
+                y = x**(1/2)
+                rFd_val = 1/y
+                
+            else:
+                # Relate ratio of ferredoxin directly to hydrogen production through hydrogenase reaction
+                # Purpose of ferredoxin in cell: hydrogen production for electron sink
+                # 2 Fdred- + 2H+ --> 2 Fdox + H2
+                # Energy available: related to self._dGprime_hyd
+                x = np.exp( (self._dGprime_hyd - self._dg0_hyd) /(R*self._T)) * ( 1 / np.exp( ln_conc[self._compounds.index('H2')] )  )
+                y = x**(1/2)
+                rFd_val = 1/y
+                
             # Ratio based on electron potential
             # Fd_ox + + e- --> Fd_red-
             # n       = 1
@@ -185,7 +203,7 @@ class MDF_Analysis(Pathway_cc):
             # rFd_val = np.exp((dG_Fdprime - self._dGf_rFd)/(R*self._T))
             # print(rFd_val)
             
-            rFd_val = 1
+            #rFd_val = 1
             #save value as attribute
             self._rFd = rFd_val
         
@@ -264,7 +282,7 @@ class MDF_Analysis(Pathway_cc):
         """     Function to optimize for the MDF of the pathway.
                 Can be done with or without fixed concentrations for specific compounds. 
                 Default is without fixed concentrations or pathway energy.   """
-        
+     
         def max_mdf(ln_conc):  
             i_Pi = self._compounds.index('Pi')
             cH = 10**-self._pH
@@ -384,12 +402,5 @@ class MDF_Analysis(Pathway_cc):
         """Set the solver tolerance."""
         self._tol_conc = value
         
-    def fix_compound_value(self, comp: str, conc: float):
-        if conc > 10e-2 or conc < 1e-6:
-            warnings.warn('Warning: a fixed concentration is outside of the physiological boundaries!')
-            
-        i_comp = self._compounds.index(comp)
-        self._fixed_c[i_comp] = conc
-        
-        return self._fixed_c
+
 
