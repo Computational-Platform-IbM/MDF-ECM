@@ -185,6 +185,15 @@ class Pathway_cc(object):
         self._dGprime_hyd = value
         
     @property
+    def dGprime_hydABC(self):
+        """Get the dG of hydrogenase."""
+        return self._dGprime_hydABC
+
+    def set_dGprime_hydABC(self, value):
+        """Set the dG of hydrogenase."""
+        self._dGprime_hydABC = value
+        
+    @property
     def dGatp(self):
         """Get the value of dGatp."""
         return self._dGatp
@@ -328,13 +337,25 @@ class Pathway_cc(object):
             
             #normalize to production of 1 hydrogen: 2 fdred- + 2 H+ --> 2fdox + H2
             i_H2 = self._compounds.index('H2')
-            self._dg0_hyd = self._dg0[i_hyd]/self._stoich[i_H2, i_hyd]
+            self._dg0_hyd = self._dg0[i_hyd]/abs(self._stoich[i_H2, i_hyd])
             
         else:
             self._dg0_hyd = self.get_hyd_dg0()
             
-        #save all dg0 values as attribute of the pathway object and save dg0_hydrogenase reaction
-        return self._dg0, self._dg0_hyd
+        #save the dg0 of hydABC complex if this reaction is in the matrix
+        if 'hydABC' or 'HydABC' in self._reactions:
+            if 'hydABC' in self._reactions:
+                i_change = self._reactions.index('hydABC')
+                self._reactions[i_change] = 'HydABC'
+                
+            i_hydABC = self._reactions.index('HydABC')
+            
+            #normalize to production of 1 NAD: 2 Fdred- + NADH + 3H+ --> 2 Fdox + NAD+ + 2 H2
+            i_rNADH = self._compounds.index('rNADH')
+            self._dg0_hydABC = self._dg0[i_hydABC]/abs(self._stoich[i_rNADH, i_hydABC])
+            
+        #save all dg0 values as attribute of the pathway object
+        return self._dg0
     
     def check_empty_reactions(self):
         #create empty list to store indices of empty columns
@@ -451,4 +472,11 @@ class Pathway_cc(object):
         
         return
         
+    def fix_compound_value(self, comp: str, conc: float):
+        if conc > 10e-2 or conc < 1e-6:
+            warnings.warn('Warning: a fixed concentration is outside of the physiological boundaries!')
+            
+        i_comp = self._compounds.index(comp)
+        self._fixed_c[i_comp] = conc
         
+        return self._fixed_c
