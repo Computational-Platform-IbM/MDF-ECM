@@ -91,6 +91,7 @@ class MDF_Result(object):
                     i = self._compounds.index(comp)
                     conditions += f'\t {comp} = {self._opt_conc[i]:.3f}'.expandtabs()
                 else:
+                    i = self._compounds.index(comp)
                     conditions += f'\t [{comp}] = {self._opt_conc[i]:.2e} M'.expandtabs()
 
         conditions += f'\t Pi-pool = {self._maxPi:.2f} M \t CoA-pool = {self._maxCoA:.2f} M'.expandtabs()
