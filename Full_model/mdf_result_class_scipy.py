@@ -123,7 +123,13 @@ class MDF_Result(object):
 
         plot_compounds = np.delete(np.array(self._compounds), remove)
         plot_conc = np.delete(np.array(self._opt_conc), remove)
-                
+        
+        i_Pi = np.where(plot_compounds == 'Pi')
+        i_CoA = np.where(plot_compounds == 'CoA')
+        
+        plot_compounds[i_Pi] = 'Free Pi'
+        plot_compounds[i_CoA] = 'Free CoA'
+        
         ax3 = fig.add_subplot(212)
         ax3.title.set_text('Compound concentrations')
         
