@@ -7,6 +7,7 @@ Created on Fri Oct  1 10:10:52 2021
 
 #%%
 import numpy as np
+import copy
 
 from MEPfunctions import importpath 
 
@@ -74,8 +75,7 @@ class Pathway_cc(object):
          self._S_netR, 
          self._stoich, 
          self._rel_flux)        = importpath('\\' + filename)
-        
-        self._init_values       = {'T': T, 'pH': pH, 'original fixed conc': self._fixed_c}
+
         
         #check for reactions that have all coefficients zero and remove them
         self.check_empty_reactions()
@@ -109,6 +109,9 @@ class Pathway_cc(object):
         self._fixed_c           = np.delete(self._fixed_c, i_rATP)
         self._element_comp      = np.delete(self._element_comp, i_rATP, axis=0)
         self._S_netR            = np.delete(self._S_netR, i_rATP)
+        
+        self._fixed_c_copy      = list(self._fixed_c)
+        self._init_values       = {'T': T, 'pH': pH, 'original fixed conc': self._fixed_c_copy}
         
         #get number of compounds and reactions in pathway
         self._Nc, self._Nr  = self._stoich.shape
@@ -343,7 +346,7 @@ class Pathway_cc(object):
             self._dg0_hyd = self.get_hyd_dg0()
             
         #save the dg0 of hydABC complex if this reaction is in the matrix
-        if 'hydABC' or 'HydABC' in self._reactions:
+        if 'hydABC' in self._reactions or 'HydABC' in self._reactions:
             if 'hydABC' in self._reactions:
                 i_change = self._reactions.index('hydABC')
                 self._reactions[i_change] = 'HydABC'
@@ -461,7 +464,7 @@ class Pathway_cc(object):
             self.calc_dG0_path()
         
         #ensure fixed concentrations are back to the way they are in the excel sheet
-        self._fixed_c = self._init_values['original fixed conc']
+        self._fixed_c = np.array(self._init_values['original fixed conc'])
         
         #set these parameters back to default values
         self._dGatp     = default_dGatp
