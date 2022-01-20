@@ -16,7 +16,9 @@ from datafile import (
 
 from pathway_class_scipy_cc import Pathway_cc
 from mdf_result_class_scipy import MDF_Result
+from mdf_sens_analysis_result_class import MDF_Sens_Analysis_Result
 import warnings
+from typing import Dict, List
 
 #%%
 class MDF_Analysis(Pathway_cc):
@@ -391,7 +393,9 @@ class MDF_Analysis(Pathway_cc):
                           self._rFd,
                           self._dGatp,
                           self._dGatp0,
-                          self._netATP)
+                          self._netATP,
+                          self._dGprime_hyd,
+                          self._dGprime_hydABC)
     
     @property
     def solver_tol(self):
@@ -401,6 +405,98 @@ class MDF_Analysis(Pathway_cc):
     def set_solver_tol(self, value):
         """Set the solver tolerance."""
         self._tol_conc = value
+    
+    def sensitivity_analysis(self, var: str, values: List[float], vary_compound_conc = False):
+        """Perform a sensitivity analysis of the pathway.
         
+        'Var' has to be one of: [T, pH, Pi, CoA, dGprime_hyd, dGprime_hydABC, dGatp, rNADH, rNADPH, rFd]. Unless 'vary_compound_conc' = True, then 'var' can be any compound participating in the reaction.
+        
+        'Values' has to be a list of floats that are the different values of the parameter for which the pathway will be analyzed."""
+        
+        #begin by setting the Pathway back to default settings every new sensitivity analysis
+        self.to_default()
+        
+        #list of options of variables that can be adjusted
+        options = ['T', 'pH',  'Pi-pool', 'CoA-pool', 'dGprime_hyd', 'dGprime_hydABC', 'dGatp', 'rNADH', 'rNADPH', 'rFd']
+        
+        result_objects = []
+        
+        if vary_compound_conc == False:
+            if var not in options:
+                raise KeyError('The variable called cannot be varied through this function.')
+        
+            if var == 'T':
+                for i, val in enumerate(values):
+                    self.set_T(val)
+                    result = self.execute_mdf_basis(set_fixed_c=True, phys_bounds = True)
+                    result_objects += [result]
+                    
+            if var == 'pH':
+                for i, val in enumerate(values):
+                    self.set_ph(val)
+                    result = self.execute_mdf_basis(set_fixed_c=True, phys_bounds = True)
+                    result_objects += [result]
+                
+            if var == 'Pi-pool':
+                for i, val in enumerate(values):
+                    self.set_maxPi(val)
+                    result = self.execute_mdf_basis(set_fixed_c=True, phys_bounds = True)
+                    result_objects += [result]
+                
+            if var == 'CoA-pool':
+                for i, val in enumerate(values):
+                    self.set_maxCoA(val)
+                    result = self.execute_mdf_basis(set_fixed_c=True, phys_bounds = True)
+                    result_objects += [result]
+                
+            if var == 'dGprime_hyd':
+                for i, val in enumerate(values):
+                    self.set_dGprime_hyd(val)
+                    result = self.execute_mdf_basis(set_fixed_c=True, phys_bounds = True)
+                    result_objects += [result]
+                
+            if var == 'dGprime_hydABC':
+                for i, val in enumerate(values):
+                    self.set_dGprime_hydABC(val)
+                    result = self.execute_mdf_basis(set_fixed_c=True, phys_bounds = True)
+                    result_objects += [result]
+            
+            if var == 'dGatp':
+                for i, val in enumerate(values):
+                    self.set_dGatp(val)
+                    result = self.execute_mdf_basis(set_fixed_c=True, phys_bounds = True)
+                    result_objects += [result]
+                
+            if var == 'rNADH':
+                for i, val in enumerate(values):
+                    self.set_rNADH(val)
+                    result = self.execute_mdf_basis(set_fixed_c=True, phys_bounds = True,  user_defined_rNADH = True)
+                    result_objects += [result]
+            
+            if var == 'rNADPH':
+                for i, val in enumerate(values):
+                    self.set_rNADPH(val)
+                    result = self.execute_mdf_basis(set_fixed_c=True, phys_bounds = True, user_defined_rNADPH = True)
+                    result_objects += [result]
+            
+            if var == 'rFd':
+                for i, val in enumerate(values):
+                    self.set_rFd(val)
+                    result = self.execute_mdf_basis(set_fixed_c=True, phys_bounds = True, user_defined_rFd = True)
+                    result_objects += [result]
+                
+        else:
+            comp = var
+            
+            for i, val in enumerate(values):
+                self.fix_compound_value(comp, val)
+                result = self.execute_mdf_basis(set_fixed_c=True, phys_bounds = True)
+                result_objects += [result]
+        
+        if vary_compound_conc == False:
+            return MDF_Sens_Analysis_Result(result_objects)
+        else:
+            print(comp, values)
+            return MDF_Sens_Analysis_Result(result_objects, comp, values)
 
 
