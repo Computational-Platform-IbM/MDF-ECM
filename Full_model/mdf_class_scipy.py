@@ -165,7 +165,7 @@ class MDF_Analysis(Pathway_cc):
             rFd = ln_conc[i_rFd]
             
             ##TODO: show equation where this (x and y etc) is derived from           
-            if 'HydABC' or 'hydABC' in self._reactions:
+            if 'HydABC' in self._reactions or 'hydABC' in self._reactions:
                 # Relate ratio of ferredoxin directly to hydrogen production through ebif reaction (HydABC complex)
                 # Purpose of ferredoxin in cell: hydrogen production for electron sink
                 # 2 Fdred- + NADH + 3H+ --> 2 Fdox + NAD+ + 2 H2
