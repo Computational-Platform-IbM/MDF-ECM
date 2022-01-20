@@ -121,7 +121,7 @@ class Pathway_cc(object):
         """Get the pH."""
         return self._pH
 
-    def set_p_h(self, value):
+    def set_ph(self, value):
         """Set the pH."""
         self._pH = value
         
