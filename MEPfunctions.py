@@ -13,6 +13,7 @@ import os
 from typing import Dict, List
 import matplotlib.pyplot as plt
 #import tqdm
+import textwrap
 
 #%% import pathway info
 def importpath(filename):
@@ -108,15 +109,14 @@ def comparison_plot(dgs: Dict, conc: Dict, mdf: List, total_dG: List, key_info: 
                'firebrick', 'tan', 'darkcyan', 'seagreen']
     
     #make figure
-    fig = plt.figure(figsize=(13,9))
+    fig = plt.figure(figsize=(15,9))
     plt.suptitle(netreaction_eq)
 
     #inidividual deltaG values of reactions
     ax2 = fig.add_subplot(211)
     ax2.title.set_text('Reaction energies')
-    #ax2.plot(reactions, dg0, 'o', label = "$\Delta$G_0")
     ax3 = fig.add_subplot(212)
-
+    ax3.title.set_text('Compound concentrations')
 
     #concentrations
     comp_exceptions = ['H+', 'H2O', 'rFd', 'rNADH', 'rNADPH', 'rATP']
@@ -139,9 +139,8 @@ def comparison_plot(dgs: Dict, conc: Dict, mdf: List, total_dG: List, key_info: 
         
         for key in conc[i]:
             if key != 'conc':
-                lab2 += f'\n {key} = {conc[i][key]:.2e}, '
+                lab2 += f'\n {key} = {conc[i][key]:.2e}, \nTotal $\Delta$G = {total_dG[i]:.2f} kJ/mol, \n MDF = {mdf[i]:.2f} kJ/mol'
         
-        lab2 += f'\n MDF = {mdf[i]:.2f} kJ/mol'
         
         ax2.plot(reactions, plot_dg, 'o', color = colours[i], label = lab1)
         ax3.plot(plot_compounds, plot_conc, 'o', color = colours[i], label = lab2)
@@ -154,16 +153,22 @@ def comparison_plot(dgs: Dict, conc: Dict, mdf: List, total_dG: List, key_info: 
     ax2.set_xticklabels(reactions, fontsize=8, rotation=90)
     ax2.set_ylabel('$\Delta$G [kJ/mol]')
     ax2.set_xlabel('Reactions')
-    ax2.legend()
+    #ax2.legend(bbox_to_anchor = (1.05, 0.3))
     
-    ax3.title.set_text('Compound concentrations')
+    
     ax3.xaxis.set_ticks(plot_compounds)
     ax3.set_xticklabels(plot_compounds, fontsize=8, rotation=90)
     ax3.plot([0, len(plot_conc)], [10**-6, 10**-6], 'k-')
     ax3.plot([0, len(plot_conc)], [10**-2, 10**-2], 'k-')
     ax3.set_yscale('log')
-    ax3.legend()
-
+    ax3.legend(bbox_to_anchor = (1.05, 1.04))
+    
+    textstr = 'TEST HOW DOES THIS WORK TEST HOW DOES THIS WORK TEST HOW DOES THIS WORK TEST HOW DOES T'
+    wrapper = textwrap.TextWrapper(width=15)
+  
+    textstr = wrapper.fill(text=textstr)
+    
+    #plt.text(0.02, 0.5, textstr, fontsize=14, transform=plt.gcf().transFigure)
     plt.tight_layout()
     
     return
