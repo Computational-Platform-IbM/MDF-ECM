@@ -496,7 +496,6 @@ class MDF_Analysis(Pathway_cc):
         if vary_compound_conc == False:
             return MDF_Sens_Analysis_Result(result_objects)
         else:
-            print(comp, values)
             return MDF_Sens_Analysis_Result(result_objects, comp, values)
 
 
