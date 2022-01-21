@@ -41,9 +41,9 @@ class MDF_Sens_Analysis_Result(object):
         self._dGprime_hyd       = []
         self._dGprime_hydABC    = []
         
-        if vary_comp_conc:
-            self._vary_comp = vary_comp_conc
-            self._var_conc = var_conc
+        #save if a compound was varied or not and what the values were
+        self._vary_comp = vary_comp_conc
+        self._var_conc = var_conc
         
         
         for i in range(len(result_objects)):
@@ -87,7 +87,7 @@ class MDF_Sens_Analysis_Result(object):
             self._reactions = self._reactions[0]
             self._compounds = self._compounds[0]
         
-        if all(self._S_netR[0]) == all(self._S_netR[1]):
+        if all(self._S_netR[0] == self._S_netR[1]):
             self._S_netR = [self._S_netR[0]]
             
         all_entries_equal = all(element == self._T[0] for element in self._T)
@@ -106,16 +106,22 @@ class MDF_Sens_Analysis_Result(object):
         if all_entries_equal:
             self._maxCoA = self._maxCoA[0]
         
-        all_entries_equal = all(int(element*1e6) == int(self._rNADH[0]*1e6) for element in self._rNADH)
+        all_entries_equal = all(int(element*1e4) == int(self._rNADH[0]*1e4) for element in self._rNADH)
         if all_entries_equal:
             self._rNADH = self._rNADH[0]
         
-        all_entries_equal = all(int(element*1e6) == int(self._rNADPH[0]*1e6) for element in self._rNADPH)
-        if all_entries_equal:
+        if all(self._rNADPH):
+            all_entries_equal = all(int(element*1e4) == int(self._rNADPH[0]*1e4) for element in self._rNADPH)
+            if all_entries_equal:
+                self._rNADPH = self._rNADPH[0]
+        else:
             self._rNADPH = self._rNADPH[0]
         
-        all_entries_equal = all(int(element*1e6) == int(self._rFd[0]*1e6) for element in self._rFd)
-        if all_entries_equal:
+        if all(self._rFd):
+            all_entries_equal = all(int(element*1e3) == int(self._rFd[0]*1e3) for element in self._rFd)
+            if all_entries_equal:
+                self._rFd = self._rFd[0]
+        else:
             self._rFd = self._rFd[0]
         
         all_entries_equal = all(element == self._dGatp[0] for element in self._dGatp)
@@ -149,7 +155,7 @@ class MDF_Sens_Analysis_Result(object):
             sub = ''
             prod = ''
             for j in range(len(self._S_netR[i])):
-                if not self._compounds[j] == 'Pi':
+                if not (self._compounds[j] == 'Pi' or self._compounds[j] == 'H2O'):
                       #to account for round-off errors: values to are ~0 should not be included in the reaction
                       if abs(self._S_netR[i][j]) > 1e-9:
                           if self._S_netR[i][j] < 0:
@@ -174,32 +180,11 @@ class MDF_Sens_Analysis_Result(object):
         colours = ['mediumblue', 'darkorchid', 'palevioletred', 
                    'firebrick', 'tan', 'darkcyan', 'seagreen']
         
-        #create string of reaction conditions
-        conditions = f'pH = {self._pH}'.expandtabs()
-        comp_exceptions = ['H2O', 'rNADH', 'rNADPH', 'rFd', 'CO2', 'H2']
+        conditions, var = self.get_conditions()
         
-        # for comp in comp_exceptions:
-        #     if comp in self._compounds and comp != 'H2O':
-        #         if comp[0] == 'r':
-        #             i = self._compounds.index(comp)
-        #             conditions += f'\t {comp} = {self._opt_conc[i]:.3f}'.expandtabs()
-        #         else:
-        #             i = self._compounds.index(comp)
-        #             conditions += f'\t [{comp}] = {self._opt_conc[i]:.2e} M'.expandtabs()
-
-        # conditions += f'\t Pi-pool = {self._maxPi:.2f} M \t CoA-pool = {self._maxCoA:.2f} M'.expandtabs()
-        
-        #make figure
-        fig = plt.figure(figsize=(13,9))
-        
-        neteq = self._netreaction_eq[0]
-        plt.suptitle(neteq )#+ '\n\n' + 
-                     # f'Overall reaction energy: {self._totaldG:.2f} kJ/mol' + 
-                     # f'\n MDF = {max(self._dg_prime_opt):.2f} kJ/mol'  +
-                     # '\n\n' + conditions)
         
         #concentrations
-        comp_exceptions = ['H+', 'H2O', 'rFd', 'rNADH', 'rNADPH', 'rATP']
+        comp_exceptions = ['H+', 'H2O', 'rFd', 'rNADH', 'rNADPH', 'rATP', 'H2', 'CO2']
         remove = []
         for i, comp in enumerate(self._compounds):
             if comp in comp_exceptions:
@@ -208,14 +193,129 @@ class MDF_Sens_Analysis_Result(object):
         plot_compounds = np.delete(np.array(self._compounds), remove)
         
         #make figure
-        fig = plt.figure(figsize=(15,9))
-        plt.suptitle(self._netreaction_eq)
-
-        #inidividual deltaG values of reactions
-        ax2 = fig.add_subplot(211)
-        ax2.set_title('Reaction energies', fontweight='bold')
-        ax3 = fig.add_subplot(212)
-        ax3.set_title('Compound concentrations', fontweight='bold')
+        fig = plt.figure(figsize=(15,10))
         
+        #inidividual deltaG values of reactions
+        ax1 = fig.add_subplot(211)
+        #ax1.set_title('Reaction energies', fontweight='bold', va = 'bottom')
+        
+        #compound concentrations
+        ax2 = fig.add_subplot(212)
+        #ax2.set_title('Compound concentrations', fontweight='bold')
+        
+        for i in range(len(self._opt_conc)):
+            
+            
+            lab1 = '\n $\Delta$G_r = '+ f'{self._totaldG[i]:.2f} kJ/mol \n MDF = {max(self._dg_prime_opt[i]):.2f} kJ/mol \n'
+            if var[0] == 'Stoichiometry':
+                lab2 = f'\n{var[0]} {var[1][i]} \n'
+            else:
+                lab2 = f'\n{var[0]} = {var[1][i]:.2e} {var[2]} \n'
+
+            
+            ax1.plot(self._reactions, self._dg_prime_opt[i], 'o', c= colours[i], label = lab1)
+            
+            plot_conc = np.delete(np.array(self._opt_conc[i]), remove)
+            ax2.plot(plot_compounds, plot_conc, 'o',c = colours[i], label = lab2)
+            ax2.plot(plot_compounds, plot_conc, '--', c = colours[i], alpha =0.4)
+        
+        if len(self._netreaction_eq) == 1:
+            neteq = self._netreaction_eq[0] 
+            plt.suptitle(neteq + '\n\n\n' + conditions, ha='center' )
+        else:
+            plt.suptitle(conditions, ha='center' )
+            j = np.arange(0,len(self._netreaction_eq))[::-1]
+            for i in range(len(self._netreaction_eq)):
+                ax1.text(0.5, 1.05+(j[i]/100)+(j[i]/10), f'Stoichiometry {i+1}: {self._netreaction_eq[i]}', size=12, ha="center", c = colours[i], transform=ax1.transAxes)
+        
+        if self._change_resulting_from_var:
+            j = np.arange(0,len(self._change_resulting_from_var[1]))[::-1]
+            for i in range(len(self._change_resulting_from_var[1])):
+                ax1.text(0.5, 1.05+(j[i]/100)+(j[i]/10), f'{self._change_resulting_from_var[0]} = {self._change_resulting_from_var[1][i]:.2e}', size=12, ha="center", c = colours[i], transform=ax1.transAxes)
+        
+            
+            
+        ax1.grid(True)
+        ax1.xaxis.set_ticks(self._reactions)
+        ax1.set_xticklabels(self._reactions, fontsize=8, rotation=90)
+        ax1.set_ylabel('$\Delta$G [kJ/mol]')
+        ax1.set_xlabel('Reactions')
+        ax1.legend(bbox_to_anchor = (1.05, 1.04))
+        
+        ax2.grid()
+        ax2.set_ylabel('Concentration [M]')
+        ax2.set_xlabel('Compounds')
+        ax2.xaxis.set_ticks(plot_compounds)
+        ax2.set_xticklabels(plot_compounds, fontsize=8, rotation=90)
+        ax2.plot([0, len(plot_conc)], [10**-6, 10**-6], 'k-')
+        ax2.plot([0, len(plot_conc)], [10**-2, 10**-2], 'k-')
+        ax2.set_yscale('log')
+        
+        ax2.legend(bbox_to_anchor = (1.05, 1.04))
+        
+        plt.tight_layout()
         
         return
+    
+    def get_conditions(self):
+        #create string of reaction conditions
+        conditions = ''
+        
+        check_len = [self._T, self._pH, self._maxCoA, self._maxPi, self._rNADH, self._rNADPH, self._rFd, self._dGatp, self._dGprime_hyd, self._dGprime_hydABC]
+        options = ['T', 'pH',  'CoA-pool', 'Pi-pool',  'rNADH', 'rNADPH', 'rFd', 'dGatp','dGprime_hyd', 'dGprime_hydABC']
+        units = ['K', '', 'M', 'M', '', '', '', 'kJ/mol', 'kJ/mol', 'kJ/mol']
+        
+        #get name of parameter that was varied
+        var_i = [i for i,c in enumerate(check_len) if type(check_len[i]) == list]
+        self._change_resulting_from_var = None
+        
+        if self._vary_comp: 
+            var = [self._vary_comp, self._var_conc, 'M' ]
+            
+            
+            for i in range(len(check_len)):
+                #unless you're at the index of the condition that is being varied, add to conditions string
+                if check_len[i]:
+                    if type(check_len[i]) == float or type(check_len[i]) == int:
+                        conditions += f'{options[i]} = {check_len[i]:.3f} {units[i]} \t'#.expandtabs(30)
+                if (i+1)%5 == 0:
+                    conditions += '\n\n'
+                    
+            if var_i:
+                var_i = var_i[0]
+                self._change_resulting_from_var = [ options[var_i], check_len[var_i], units[var_i]]
+                    
+        elif len(var_i) != 0:
+            var_i = var_i[0]
+            var = [ options[var_i], check_len[var_i], units[var_i]]
+        
+            #loop through all conditions
+            for i in range(len(check_len)):
+                #unless you're at the index of the condition that is being varied, add to conditions string
+                if i != var_i and check_len[i]:
+                    conditions += f'\t {options[i]} = {check_len[i]:.3f} {units[i]} '.expandtabs()
+                if (i+1)%5 == 0:
+                    conditions += '\n\n'
+        else:
+            for i in range(len(check_len)):
+                #unless you're at the index of the condition that is being varied, add to conditions string
+                if check_len[i]:
+                    conditions += f'\t {options[i]} = {check_len[i]:.3f} {units[i]} '.expandtabs()
+                if (i+1)%5 == 0:
+                    conditions += '\n\n'
+                    
+            if len(self._S_netR) > 1:
+                stoichs = [ i+1 for i in range(len(self._S_netR))]
+                var = ['Stoichiometry', stoichs , '']
+            
+
+            
+                
+        
+        comp_exceptions = ['H2O', 'rNADH', 'rNADPH', 'rFd', 'CO2', 'H2']
+        for i, c in enumerate(comp_exceptions):
+            if c not in options and c != 'H2O' and c != var[0]:
+                i_c = self._compounds.index(c)
+                conditions += f'\t {c} = {self._opt_conc[0][i_c]:.2e} M '.expandtabs()
+                
+        return conditions, var
