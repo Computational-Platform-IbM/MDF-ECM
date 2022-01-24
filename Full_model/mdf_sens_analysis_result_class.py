@@ -192,6 +192,12 @@ class MDF_Sens_Analysis_Result(object):
 
         plot_compounds = np.delete(np.array(self._compounds), remove)
         
+        i_Pi = np.where(plot_compounds == 'Pi')
+        i_CoA = np.where(plot_compounds == 'CoA')
+        
+        plot_compounds[i_Pi] = 'Free Pi'
+        plot_compounds[i_CoA] = 'Free CoA'
+        
         #make figure
         fig = plt.figure(figsize=(15,10))
         
@@ -206,11 +212,11 @@ class MDF_Sens_Analysis_Result(object):
         for i in range(len(self._opt_conc)):
             
             
-            lab1 = '\n $\Delta$G_r = '+ f'{self._totaldG[i]:.2f} kJ/mol \n MDF = {max(self._dg_prime_opt[i]):.2f} kJ/mol \n'
+            lab1 = '$\Delta$G_r = '+ f'{self._totaldG[i]:.2f} kJ/mol \n MDF = {max(self._dg_prime_opt[i]):.2f} kJ/mol \n'
             if var[0] == 'Stoichiometry':
-                lab2 = f'\n{var[0]} {var[1][i]} \n'
+                lab2 = f'{var[0]} {var[1][i]} \n'
             else:
-                lab2 = f'\n{var[0]} = {var[1][i]:.2e} {var[2]} \n'
+                lab2 = f'{var[0]} = {var[1][i]:.2e} {var[2]} \n'
 
             
             ax1.plot(self._reactions, self._dg_prime_opt[i], 'o', c= colours[i], label = lab1)
@@ -265,6 +271,12 @@ class MDF_Sens_Analysis_Result(object):
         options = ['T', 'pH',  'CoA-pool', 'Pi-pool',  'rNADH', 'rNADPH', 'rFd', 'dGatp','dGprime_hyd', 'dGprime_hydABC']
         units = ['K', '', 'M', 'M', '', '', '', 'kJ/mol', 'kJ/mol', 'kJ/mol']
         
+        if not 'hyd' in self._reactions or 'Hyd' in self._reactions:
+            i_dGhyd = options.index('dGprime_hyd')
+            options.pop(i_dGhyd)
+            check_len.pop(i_dGhyd)
+            units.pop(i_dGhyd)
+            
         #get name of parameter that was varied
         var_i = [i for i,c in enumerate(check_len) if type(check_len[i]) == list]
         self._change_resulting_from_var = None
@@ -277,7 +289,7 @@ class MDF_Sens_Analysis_Result(object):
                 #unless you're at the index of the condition that is being varied, add to conditions string
                 if check_len[i]:
                     if type(check_len[i]) == float or type(check_len[i]) == int:
-                        conditions += f'{options[i]} = {check_len[i]:.3f} {units[i]} \t'#.expandtabs(30)
+                        conditions += f'\t{options[i]} = {check_len[i]:.3f} {units[i]} '.expandtabs()
                 if (i+1)%5 == 0:
                     conditions += '\n\n'
                     
@@ -286,16 +298,34 @@ class MDF_Sens_Analysis_Result(object):
                 self._change_resulting_from_var = [ options[var_i], check_len[var_i], units[var_i]]
                     
         elif len(var_i) != 0:
+            if len(var_i) > 1:
+                i_Fd = [i for i in var_i if options[i] == 'rFd']
+                
+                var_i.remove(i_Fd[0])
+                self._change_resulting_from_var = [ 'rFd', self._rFd, '']
+                
             var_i = var_i[0]
             var = [ options[var_i], check_len[var_i], units[var_i]]
-        
-            #loop through all conditions
-            for i in range(len(check_len)):
-                #unless you're at the index of the condition that is being varied, add to conditions string
-                if i != var_i and check_len[i]:
-                    conditions += f'\t {options[i]} = {check_len[i]:.3f} {units[i]} '.expandtabs()
-                if (i+1)%5 == 0:
-                    conditions += '\n\n'
+            
+            
+            if self._change_resulting_from_var:
+                #loop through all conditions
+                for i in range(len(check_len)):
+                    #unless you're at the index of the condition that is being varied, add to conditions string
+                    if i != var_i and check_len[i] and options[i] != self._change_resulting_from_var[0]:
+                        print(options[i], check_len[i], units[i])
+                        conditions += f'\t {options[i]} = {check_len[i]:.3f} {units[i]} '.expandtabs()
+                    if (i+1)%5 == 0:
+                        conditions += '\n\n'
+            else:
+                #loop through all conditions
+                for i in range(len(check_len)):
+                    #unless you're at the index of the condition that is being varied, add to conditions string
+                    if i != var_i and check_len[i]:
+                        conditions += f'\t {options[i]} = {check_len[i]:.3f} {units[i]} '.expandtabs()
+                    if (i+1)%5 == 0:
+                        conditions += '\n\n'
+                        
         else:
             for i in range(len(check_len)):
                 #unless you're at the index of the condition that is being varied, add to conditions string
