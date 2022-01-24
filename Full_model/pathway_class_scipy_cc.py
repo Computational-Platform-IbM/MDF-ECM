@@ -470,6 +470,8 @@ class Pathway_cc(object):
         self._dGatp     = default_dGatp
         self._maxPi     = default_Pipool
         self._maxCoA    = default_CoApool
+        self._dGprime_hyd       = -2    #kJ/mol
+        self._dGprime_hydABC    = -2    #kJ/mol
         
         ##TODO: electron carriers?
         
