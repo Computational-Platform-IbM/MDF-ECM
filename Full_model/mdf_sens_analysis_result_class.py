@@ -313,7 +313,6 @@ class MDF_Sens_Analysis_Result(object):
                 for i in range(len(check_len)):
                     #unless you're at the index of the condition that is being varied, add to conditions string
                     if i != var_i and check_len[i] and options[i] != self._change_resulting_from_var[0]:
-                        print(options[i], check_len[i], units[i])
                         conditions += f'\t {options[i]} = {check_len[i]:.3f} {units[i]} '.expandtabs()
                     if (i+1)%5 == 0:
                         conditions += '\n\n'
@@ -345,7 +344,8 @@ class MDF_Sens_Analysis_Result(object):
         comp_exceptions = ['H2O', 'rNADH', 'rNADPH', 'rFd', 'CO2', 'H2']
         for i, c in enumerate(comp_exceptions):
             if c not in options and c != 'H2O' and c != var[0]:
-                i_c = self._compounds.index(c)
-                conditions += f'\t {c} = {self._opt_conc[0][i_c]:.2e} M '.expandtabs()
+                if c in self._compounds:
+                    i_c = self._compounds.index(c)
+                    conditions += f'\t {c} = {self._opt_conc[0][i_c]:.2e} M '.expandtabs()
                 
         return conditions, var
