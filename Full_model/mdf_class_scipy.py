@@ -297,6 +297,7 @@ class MDF_Analysis(Pathway_cc):
             #the optimization target is the minimum driving force (mdf) of the pathway
             #mdf is the reaction with the least amount of driving force (so the highest value)
             mdf = max(dg_prime)
+            #print(mdf)
             return mdf
         
         #get bounds for scipy minimize
