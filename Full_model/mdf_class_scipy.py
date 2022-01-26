@@ -186,7 +186,6 @@ class MDF_Analysis(Pathway_cc):
                 rFd_val = 1/y
                 
             elif 'H2'in self._compounds:
-                ## TODO: elif statement to check for H2 presence?
                 # Relate ratio of ferredoxin directly to hydrogen production through hydrogenase reaction
                 # Purpose of ferredoxin in cell: hydrogen production for electron sink
                 # 2 Fdred- + 2H+ --> 2 Fdox + H2
@@ -195,7 +194,6 @@ class MDF_Analysis(Pathway_cc):
                 y = x**(1/2)
                 rFd_val = 1/y
             
-            ## TODO: else, if above options not considered, to based on Electron potential?
             else:
                 # Ratio based on electron potential
                 # Fd_ox + + e- --> Fd_red-
