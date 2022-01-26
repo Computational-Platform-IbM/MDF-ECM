@@ -185,7 +185,8 @@ class MDF_Analysis(Pathway_cc):
                 y = x**(1/2)
                 rFd_val = 1/y
                 
-            else:
+            elif 'H2'in self._compounds:
+                ## TODO: elif statement to check for H2 presence?
                 # Relate ratio of ferredoxin directly to hydrogen production through hydrogenase reaction
                 # Purpose of ferredoxin in cell: hydrogen production for electron sink
                 # 2 Fdred- + 2H+ --> 2 Fdox + H2
@@ -193,18 +194,20 @@ class MDF_Analysis(Pathway_cc):
                 x = np.exp( (self._dGprime_hyd - self._dg0_hyd) /(R*self._T)) * ( 1 / np.exp( ln_conc[self._compounds.index('H2')] )  )
                 y = x**(1/2)
                 rFd_val = 1/y
+            
+            ## TODO: else, if above options not considered, to based on Electron potential?
+            else:
+                # Ratio based on electron potential
+                # Fd_ox + + e- --> Fd_red-
+                n       = 1
+            
+                # #values from Buckel & Thauer 2013
+                Eprime  = -500e-3                       #V (J/C)
                 
-            # Ratio based on electron potential
-            # Fd_ox + + e- --> Fd_red-
-            # n       = 1
+                dG_Fdprime = -n*F*Eprime/1000           #kJ
+                rFd_val = np.exp((dG_Fdprime - self._dGf_rFd)/(R*self._T))
             
-            # #values from Buckel & Thauer 2013
-            # Eprime  = -500e-3                       #V (J/C)
-            
-            # dG_Fdprime = -n*F*Eprime/1000           #kJ
-            # rFd_val = np.exp((dG_Fdprime - self._dGf_rFd)/(R*self._T))
             # print(rFd_val)
-            
             #rFd_val = 1
             #save value as attribute
             self._rFd = rFd_val
