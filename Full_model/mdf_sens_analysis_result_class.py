@@ -142,7 +142,6 @@ class MDF_Sens_Analysis_Result(object):
             
         self.get_reaction_eqs()
         
-        # self._key_info = [self._netreaction_eq, compounds, reactions, dG0_path]
         
         return
     

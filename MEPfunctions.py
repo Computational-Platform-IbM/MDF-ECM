@@ -67,6 +67,7 @@ def importpath(filename):
     #create array for stoichiometric coefficients of netto pathway reaction
     S_netR = data_ar[:,7]
     S_netR[np.isnan(S_netR)] = 0
+    S_netR[np.where(abs(S_netR) < 1e-9)] = 0
 
     # create stoichiometric matrix with just the reaction coefficiets: remove first three columns 
     stoich = data_ar[:, 8:]

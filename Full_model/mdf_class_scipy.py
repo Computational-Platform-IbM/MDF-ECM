@@ -166,26 +166,46 @@ class MDF_Analysis(Pathway_cc):
             i_rFd = self._compounds.index('rFd')
             rFd = ln_conc[i_rFd]
             
-            ##TODO: show equation where this (x and y etc) is derived from           
-            if 'HydABC' in self._reactions or 'hydABC' in self._reactions:
+            #NAD+ + 2e- + H+ --> NADH           
+            n       = 2
+            #values from Buckel & Thauer 2013
+            Eprime  = -280e-3                       #V (J/C)
+            
+            dG_NADHprime = -n*F*Eprime/1000           #kJ
+            rNADH_val = np.exp((dG_NADHprime - self._dGf_rNADH)/(R*self._T))
+            
+            if 'rNADPH' in self._compounds:
+                #NADP+ + 2e- + H+ --> NADPH
+                n       = 2
+                #values from Buckel & Thauer 2013
+                Eprime  = -380e-3                       #V (J/C)
+                
+                dG_NADPHprime   = -n*F*Eprime/1000           #kJ
+                rNADPH_val      = np.exp((dG_NADPHprime - self._dGf_rNADPH)/(R*self._T))
+            
+            ##TODO: show equation where this (x and y etc) is derived from    
+            if 'Rnf' in self._reactions:
+                #2 Fdred- + NAD+ + H+ --> 2 Fdox + NADH + pmf
+                # dG' = dG0 + R T ln(...)
+                x = np.exp( (self._dGprime_Rnf - self._dg0_Rnf) /(R*self._T)) / ( rNADH_val )  
+                y = x**(1/2)
+                rFd_val = 1/y
+                
+            elif 'HydABC' in self._reactions:
                 # Relate ratio of ferredoxin directly to hydrogen production through ebif reaction (HydABC complex)
                 # Purpose of ferredoxin in cell: hydrogen production for electron sink
                 # 2 Fdred- + NADH + 3H+ --> 2 Fdox + NAD+ + 2 H2
                 # Energy available: related to self._dGprime_hydABC
-                
-                #NAD+ + 2e- + H+ --> NADH           
-                n       = 2
-                #values from Buckel & Thauer 2013
-                Eprime  = -280e-3                       #V (J/C)
-                
-                dG_NADHprime = -n*F*Eprime/1000           #kJ
-                rNADH_val = np.exp((dG_NADHprime - self._dGf_rNADH)/(R*self._T))
-                
                 x = np.exp( (self._dGprime_hydABC - self._dg0_hydABC) /(R*self._T)) * ( rNADH_val  / (np.exp( ln_conc[self._compounds.index('H2')] )**2)  )
                 y = x**(1/2)
                 rFd_val = 1/y
-                
-            elif 'H2'in self._compounds:
+            
+            elif 'Nfn' in self._reactions:
+                x = np.exp( (self._dGprime_Nfn - self._dg0_Nfn) /(R*self._T)) * ( rNADH_val  / rNADPH_val  )
+                y = x**(1/2)
+                rFd_val = 1/y
+            
+            elif 'hyd'in self._reactions:
                 # Relate ratio of ferredoxin directly to hydrogen production through hydrogenase reaction
                 # Purpose of ferredoxin in cell: hydrogen production for electron sink
                 # 2 Fdred- + 2H+ --> 2 Fdox + H2
@@ -205,8 +225,7 @@ class MDF_Analysis(Pathway_cc):
                 dG_Fdprime = -n*F*Eprime/1000           #kJ
                 rFd_val = np.exp((dG_Fdprime - self._dGf_rFd)/(R*self._T))
             
-            # print(rFd_val)
-            #rFd_val = 1
+            print(rFd_val)
             #save value as attribute
             self._rFd = rFd_val
         
@@ -343,7 +362,8 @@ class MDF_Analysis(Pathway_cc):
         
         #get results
         opt_conc = np.exp(res.x)
-
+        
+        #calculate the rATP ratio from the dGprime and dG0 values and [Pi] - the latter which comes from the optimization
         rATP = np.exp( (self._dGatp - self._dGatp0) / (R*self._T)) * opt_conc[i_Pi] * (10**-self._pH)
         dg_prime_opt = self._dg0 + ( R*self._T * self._stoich.T @ res.x ) + ( R * self._T * self._rATP_in_reaction * np.log(rATP) )
         
@@ -358,9 +378,7 @@ class MDF_Analysis(Pathway_cc):
         sum_dg = sum(dg_prime_opt)
         
         overall_dg0 = self._S_netR_copy.T @ self._dGfprime
-        #multiply the overall reaction energy by the moles of substrate as the net reaction is normalized to 1
-        # and the sum of individual reaction energies is not!
-        overall_dg_prime = (overall_dg0 + ( R*self._T * self._S_netR.T @ res.x ) + ( R * self._T * self._netATP * np.log(rATP) ) ) * abs(self._stoich[0,0])
+        overall_dg_prime = overall_dg0 + ( R*self._T * self._S_netR.T @ res.x ) + ( R * self._T * self._netATP * np.log(rATP) )
         
         #Floor values so that float precision does not matter as much
         check = np.floor(sum_dg) - np.floor(overall_dg_prime)
@@ -369,16 +387,20 @@ class MDF_Analysis(Pathway_cc):
             raise ValueError(
                 "The sum of reaction energies is not equal to the overall reaction energy!")
        
-        ##TODO: disucss approach!
-        #normalize all reaction energies to 1 mol of substrate - to compare scenarios
-        dg_prime_opt = dg_prime_opt/abs(self._stoich[0,0])
-        plot_dg0 = self._dg0/abs(self._stoich[0,0])
+        plot_dg0 = self._dg0
+        
+        #account for extra ATP production in system through pmf
+        if 'Rnf' in self._reactions:
+            i_Rnf = self._reactions.index('Rnf')
+            #ATP produced from pmf = energy available in Rnf divided by the energy that it costs to generate ATP
+            #add this to the value that was already there from SLP reactions
+            self._netATP += dg_prime_opt[i_Rnf]/-self._dGatp
 
         #create instance of MDF result class
         return MDF_Result(opt_conc, 
                           dg_prime_opt, 
-                          overall_dg_prime/abs(self._stoich[0,0]),
-                          plot_dg0, #self._dg0, 
+                          overall_dg_prime,
+                          plot_dg0,  
                           self._reactions, 
                           self._compounds, 
                           self._fixed_c_names,

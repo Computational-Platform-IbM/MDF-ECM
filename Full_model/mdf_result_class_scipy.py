@@ -63,13 +63,15 @@ class MDF_Result(object):
                         prod += f' {abs(self._S_netR[j]):.2f} {self._compounds[j]} + '
             
         
-        if self._yATP > 0:
-            prod += f' {abs(self._yATP):.2f} ATP +'
-        else:
-            sub += f' {abs(self._yATP):.2f} ATP +'
         
         sub = sub[0:-2]   #remove extra plus at the end for both sides of the reaction
         prod = prod[0:-2]
+        
+        if self._yATP > 0:
+            prod    += f' (+ {abs(self._yATP):.2f} ATP)'
+        else:
+            sub     += f' (+ {abs(self._yATP):.2f} ATP)'
+        
         
         #save the netto reaction equation as attribute of object
         self._netreaction_eq = sub + u'\u279E' + prod
@@ -93,6 +95,36 @@ class MDF_Result(object):
                 if comp[0] == 'r':
                     i = self._compounds.index(comp)
                     conditions += f'\t {comp} = {self._opt_conc[i]:.3f}'.expandtabs()
+                elif comp == 'H2':
+                    i_H2 = self._compounds.index('H2')
+                    cH2 = self._opt_conc[i_H2]
+                    
+                    #Henry's law: p_i = H_i * c_i
+                    #with units of H in [l*atm/mol]
+                    #assumption: intracellular [H2] = extracellular [H2]
+                    #partial pressure proportional to mol fraction in liquid
+                    #assumption: ideal mixture, low values of x_i
+    
+                    H_H2 = 1228         #l*atm/mol
+                    pH2 = H_H2 * cH2    #atm
+                    
+                    conditions += f'\t pH2 = {pH2:.2e} atm'.expandtabs()
+                
+                elif comp == 'CO2':
+                    i_CO2 = self._compounds.index('CO2')
+                    cCO2 = self._opt_conc[i_CO2]
+                    
+                    #Henry's law: p_i = H_i * c_i
+                    #with units of H in [l*atm/mol]
+                    #assumption: intracellular [H2] = extracellular [H2]
+                    #partial pressure proportional to mol fraction in liquid
+                    #assumption: ideal mixture, low values of x_i
+    
+                    H_CO2 = 1/0.037        #l*atm/mol
+                    pCO2 = H_CO2 * cCO2    #atm
+                    
+                    conditions += f'\t pCO2 = {pCO2:.2e} atm'.expandtabs()
+                    
                 else:
                     i = self._compounds.index(comp)
                     conditions += f'\t [{comp}] = {self._opt_conc[i]:.2e} M'.expandtabs()
@@ -117,6 +149,7 @@ class MDF_Result(object):
         ax2.xaxis.set_ticks(self._reactions)
         ax2.set_xticklabels(self._reactions, fontsize=8, rotation=90)
         ax2.legend()
+        #ax2.set_yscale('symlog')
 
         #concentrations
         remove = []

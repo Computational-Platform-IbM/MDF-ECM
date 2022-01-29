@@ -47,17 +47,22 @@ class Pathway_cc(object):
         #set default values for NADH/NAD+, NADPH/NADP+ and Fd_red/Fd_ox
         self._rNADH     = None
         self._rNADPH    = None
-        self._rFd       = 1
+        self._rFd       = None
         
         #set default values for ATP production
         self._dGatp0    = dGatp0
         self._dGatp     = default_dGatp
         
         
-        #dG of hydrogenase: amount of energy assumed to be available in the production of hydrogen
-        self._dGprime_hyd       = -2    #kJ/mol
-        #dG of hydABC complex: amount of energy assumed to be available in the HydABC e-bif reaction
-        self._dGprime_hydABC    = -2    #kJ/mol
+        #dGprime of reactions used to determine rFd
+        #hydrogenase, HydABC complex, Rnf, Nfn
+        #Rnf needs to have dG that allows for the production of 1/4 ATP per proton
+        #Rnf is normalized to 1 
+        self._dGprime_hyd       = 0                 #kJ/mol
+        self._dGprime_hydABC    = 0                 #kJ/mol
+        self._dGprime_Rnf       = -self._dGatp/2    #kJ/mol
+        self._dGprime_Nfn       = 0                 #kJ/mol
+        
         
         #set default tolerance for solver
         self._tol_conc    = 1e-9
@@ -95,12 +100,14 @@ class Pathway_cc(object):
         self.check_element_balance()
         self.get_dGf_prime()
         self.calc_dG0_path()
+        self.get_dG_rFd()
         
         #after calculating dg0 of the pathway reactions, remove rATP from the stoichiometric matrix etc
         #save involvement of ATP/ADP in separate array
         i_rATP                  = self._compounds.index('rATP')
         self._rATP_in_reaction  = self._stoich[i_rATP,:]
         self._netATP            = self._S_netR[i_rATP]
+        self._netATP_copy       = self._netATP.copy()
         self._S_netR_copy       = self._S_netR.copy()
 
         #remove rATP from matrix and arrays
@@ -334,31 +341,57 @@ class Pathway_cc(object):
         #first calculate dg0 values based on compound formation energies provided
         self._dg0 = self._stoich_copy.T @ self._dGfprime
         
+        
+            
+        #save all dg0 values as attribute of the pathway object
+        return self._dg0
+    
+    def get_dG_rFd(self):
+        #get index of rNADH in compounds
+        i_rNADH = self._compounds_copy.index('rNADH')
+        
+        #if Rnf complex in system: use this to determine rFd
+        #save the dg0 of Rnf complex if this reaction is in the matrix
+        if 'Rnf' in self._reactions:
+            self._reaction_for_rFd = 'Rnf'
+            i_Rnf = self._reactions.index('Rnf')
+            
+            #normalize to production of 1 NADH: 2 Fdred- + NAD+ + H+ --> 2 Fdox + NADH + pmf
+            self._dg0_Rnf = self._dg0[i_Rnf]/abs(self._stoich_copy[i_rNADH, i_Rnf])
+        
+        #save the dg0 of hydABC complex if this reaction is in the matrix
+        elif 'hydABC' in self._reactions or 'HydABC' in self._reactions:
+            if 'hydABC' in self._reactions:
+                i_change = self._reactions.index('hydABC')
+                self._reactions[i_change] = 'HydABC'
+            
+            self._reaction_for_rFd = 'HydABC'
+            i_hydABC = self._reactions.index('HydABC')
+            
+            #normalize to production of 1 NAD: 2 Fdred- + NADH + 3H+ --> 2 Fdox + NAD+ + 2 H2
+            self._dg0_hydABC = self._dg0[i_hydABC]/abs(self._stoich_copy[i_rNADH, i_hydABC])    
+            
+        #save the dg0 of Nfn complex if this reaction is in the matrix
+        elif 'Nfn' in self._reactions:
+            self._reaction_for_rFd = 'Nfn'
+            i_Nfn = self._reactions.index('Nfn')
+            
+            #normalize to production of 1 NAD: 2 Fdred- + NADH + 2 NADP+ --> 2 Fdox + NAD+ + 2 NADPH
+            self._dg0_Nfn = self._dg0[i_Nfn]/abs(self._stoich_copy[i_rNADH, i_Nfn])
+            
         #save or get the dg0 of hydrogenase
-        if 'hyd' in self._reactions:
+        elif 'hyd' in self._reactions:
+            self._reaction_for_rFd = 'hyd'
             i_hyd = self._reactions.index('hyd')
             
             #normalize to production of 1 hydrogen: 2 fdred- + 2 H+ --> 2fdox + H2
             i_H2 = self._compounds.index('H2')
-            self._dg0_hyd = self._dg0[i_hyd]/abs(self._stoich[i_H2, i_hyd])
-            
+            self._dg0_hyd = self._dg0[i_hyd]/abs(self._stoich_copy[i_H2, i_hyd])
+        
         else:
-            self._dg0_hyd = self.get_hyd_dg0()
+            self._reaction_for_rFd = None
             
-        #save the dg0 of hydABC complex if this reaction is in the matrix
-        if 'hydABC' in self._reactions or 'HydABC' in self._reactions:
-            if 'hydABC' in self._reactions:
-                i_change = self._reactions.index('hydABC')
-                self._reactions[i_change] = 'HydABC'
-                
-            i_hydABC = self._reactions.index('HydABC')
-            
-            #normalize to production of 1 NAD: 2 Fdred- + NADH + 3H+ --> 2 Fdox + NAD+ + 2 H2
-            i_rNADH = self._compounds.index('rNADH')
-            self._dg0_hydABC = self._dg0[i_hydABC]/abs(self._stoich[i_rNADH, i_hydABC])
-            
-        #save all dg0 values as attribute of the pathway object
-        return self._dg0
+        return 
     
     def check_empty_reactions(self):
         #create empty list to store indices of empty columns
@@ -380,8 +413,9 @@ class Pathway_cc(object):
         
         #loop through all rows (compounds) to check for compounds that are not used/produced in any reaction
         for j in range(0, self._stoich.shape[0]):
-            if np.all(self._stoich[j,:] == 0):
-                empty += [j]
+            if self._compounds[j] != 'rATP' and self._compounds[j] != 'Pi':
+                if np.all(self._stoich[j,:] == 0):
+                    empty += [j]
         
         self._stoich        = np.delete(self._stoich, empty, axis=0)
         self._compounds     = [c for c in self._compounds if self._compounds.index(c) not in empty]
@@ -470,9 +504,15 @@ class Pathway_cc(object):
         self._dGatp     = default_dGatp
         self._maxPi     = default_Pipool
         self._maxCoA    = default_CoApool
-        self._dGprime_hyd       = -2    #kJ/mol
-        self._dGprime_hydABC    = -2    #kJ/mol
         
+        self._netATP = self._netATP_copy
+        
+        self._dGprime_hyd       = 0                 #kJ/mol
+        self._dGprime_hydABC    = 0                 #kJ/mol
+        self._dGprime_Rnf       = -self._dGatp/2    #kJ/mol
+        self._dGprime_Nfn       = 0                 #kJ/mol
+        
+        self._tol_conc          = 1e-9
         ##TODO: electron carriers?
         
         return
