@@ -239,32 +239,32 @@ class Pathway_cc(object):
         """Set the Fd_red-/Fd_ox ratio."""
         self._rFd = value
     
-    def printreactions(self):
-        """ Print all pathway reactions, to see and check if the stoichiometric matrix was set up correctly. """
-        equations = {}
+    # def printreactions(self):
+    #     """ Print all pathway reactions, to see and check if the stoichiometric matrix was set up correctly. """
+    #     equations = {}
         
-        for i, enz in enumerate(self._reactions):
-            S = self._stoich[:,i]
-            sub = ''
-            prod = ''
-            for j in range(len(S)):
-                 if S[j] < 0:
-                     sub += f'{abs(S[j])} {self._compounds[j]} + '
-                 if S[j] > 0:
-                    prod += f'{abs(S[j])} {self._compounds[j]} + '
+    #     for i, enz in enumerate(self._reactions):
+    #         S = self._stoich[:,i]
+    #         sub = ''
+    #         prod = ''
+    #         for j in range(len(S)):
+    #              if S[j] < 0:
+    #                  sub += f'{abs(S[j])} {self._compounds[j]} + '
+    #              if S[j] > 0:
+    #                 prod += f'{abs(S[j])} {self._compounds[j]} + '
                     
-            sub = sub[0:-2]   #remove extra plus at the end for both sides of the reaction
-            prod = prod[0:-2]
+    #         sub = sub[0:-2]   #remove extra plus at the end for both sides of the reaction
+    #         prod = prod[0:-2]
                 
-            eq = sub + '<--> ' + prod
-            equations[enz] = eq
+    #         eq = sub + '<--> ' + prod
+    #         equations[enz] = eq
         
-        for key in equations.keys():
-            print(f'\n {key}: {equations[key]}')
+    #     for key in equations.keys():
+    #         print(f'\n {key}: {equations[key]}')
         
-        self._equations = equations
+    #     self._equations = equations
         
-        return self._equations 
+    #     return self._equations 
     
     def get_dGf_prime(self):
         """ Get physiological delta G of formation for all compounds.
@@ -341,12 +341,18 @@ class Pathway_cc(object):
         #first calculate dg0 values based on compound formation energies provided
         self._dg0 = self._stoich_copy.T @ self._dGfprime
         
-        
-            
         #save all dg0 values as attribute of the pathway object
         return self._dg0
     
     def get_dG_rFd(self):
+        """     Function that determines how rFd is calculated.
+                Depending on the reactions present in the pathway, rFd is coupled to one of: 
+                    Rnf-complex, Nfn-complex, hydrogenase or HydABC.
+                
+                To this end, the dG0 values of these reactions are stored, so that they can later be used to calculate rFd."""
+        
+        ##TODO: can also just calculate rFd here, but then constraints for rFd need updates
+        
         #get index of rNADH in compounds
         i_rNADH = self._compounds_copy.index('rNADH')
         
@@ -355,6 +361,9 @@ class Pathway_cc(object):
         if 'Rnf' in self._reactions:
             self._reaction_for_rFd = 'Rnf'
             i_Rnf = self._reactions.index('Rnf')
+            
+            # self._stoich_rFd = self._stoich[:,i_Rnf]
+            # self._stoich            = np.delete(self._stoich, i_Rnf, axis=1)
             
             #normalize to production of 1 NADH: 2 Fdred- + NAD+ + H+ --> 2 Fdox + NADH + pmf
             self._dg0_Rnf = self._dg0[i_Rnf]/abs(self._stoich_copy[i_rNADH, i_Rnf])

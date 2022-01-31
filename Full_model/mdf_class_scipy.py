@@ -72,39 +72,6 @@ class MDF_Analysis(Pathway_cc):
             #constraint: [H2O] = 1 M
             return np.exp(ln_conc[i_H2O]) - 1
 
-        # def con_H2(ln_conc):
-        #     #get index of compound H2
-        #     i_H2 = self._compounds.index('H2')
-            
-        #     #Henry's law: p_i = H_i * c_i
-        #     #with units of H in [l*atm/mol]
-        #     #partial pressure proportional to mol fraction in liquid
-        #     #assumption: ideal mixture, low values of x_i
-        #     H_H2 = 1228         #l*atm/mol
-        #     cH2 = self._pH2/H_H2
-        #     #cH2 = 1e-3
-            
-        #     #constraint: [H2] is determined by Henry's law and hydrogen partial pressure
-        #     return np.exp(ln_conc[i_H2]) - cH2
-        
-        # def con_CO2(ln_conc):
-        #     #get index of compound CO2
-        #     i_CO2 = self._compounds.index('CO2')
-            
-        #     #Henry's law: p_i = H_i * c_i
-        #     #with units of H in [l*atm/mol]
-        #     #partial pressure proportional to mol fraction in liquid
-        #     #assumption: ideal mixture, low values of x_i
-        #     H_CO2 = 1/0.037          #l*atm/mol
-        #     cCO2 = self._pCO2/H_CO2
-            
-        #     ##TODO: smoothness of constraints? if/abs statements can create problems
-        #     if cCO2 > def_c_max:
-        #         cCO2 = def_c_max
-            
-        #     #constraint: [H2] is determined by Henry's law and hydrogen partial pressure
-        #     return np.exp(ln_conc[i_CO2]) - cCO2
-
         def con_NADH_EP(ln_conc):
             i_rNADH = self._compounds.index('rNADH')
             
@@ -166,6 +133,7 @@ class MDF_Analysis(Pathway_cc):
             i_rFd = self._compounds.index('rFd')
             rFd = ln_conc[i_rFd]
             
+            #get rNADH as this is needed for the calculation
             #NAD+ + 2e- + H+ --> NADH           
             n       = 2
             #values from Buckel & Thauer 2013
@@ -174,6 +142,7 @@ class MDF_Analysis(Pathway_cc):
             dG_NADHprime = -n*F*Eprime/1000           #kJ
             rNADH_val = np.exp((dG_NADHprime - self._dGf_rNADH)/(R*self._T))
             
+            #get rNADPH if this is needed for the calculation
             if 'rNADPH' in self._compounds:
                 #NADP+ + 2e- + H+ --> NADPH
                 n       = 2
@@ -225,7 +194,6 @@ class MDF_Analysis(Pathway_cc):
                 dG_Fdprime = -n*F*Eprime/1000           #kJ
                 rFd_val = np.exp((dG_Fdprime - self._dGf_rFd)/(R*self._T))
             
-            print(rFd_val)
             #save value as attribute
             self._rFd = rFd_val
         
@@ -267,13 +235,7 @@ class MDF_Analysis(Pathway_cc):
                 cons += [{'type': 'eq', 'fun': con_Fd}]
             else:
                 cons += [{'type': 'eq', 'fun': con_Fd_set}]
-                
-        #TODO: Lines below commented for now: not using partial pressure! It's about the liquid phase
-        # if 'H2' in self._compounds:
-        #     cons += [{'type': 'eq', 'fun': con_H2}]
-        # if 'CO2' in self._compounds:
-        #     cons += [{'type': 'eq', 'fun': con_CO2}]
-        
+                       
         return cons
     
     def get_bounds(self, phys_bounds = False):
@@ -317,7 +279,6 @@ class MDF_Analysis(Pathway_cc):
             #the optimization target is the minimum driving force (mdf) of the pathway
             #mdf is the reaction with the least amount of driving force (so the highest value)
             mdf = max(dg_prime)
-            #print(mdf)
             return mdf
         
         #get bounds for scipy minimize
@@ -367,10 +328,10 @@ class MDF_Analysis(Pathway_cc):
         rATP = np.exp( (self._dGatp - self._dGatp0) / (R*self._T)) * opt_conc[i_Pi] * (10**-self._pH)
         dg_prime_opt = self._dg0 + ( R*self._T * self._stoich.T @ res.x ) + ( R * self._T * self._rATP_in_reaction * np.log(rATP) )
         
+        #get e-carrier ratios from optimization and save
         if 'rNADH' in self._compounds:
             i_rNADH = self._compounds.index('rNADH')
             self._rNADH = opt_conc[i_rNADH]
-        
         if 'rNADPH' in self._compounds:
             self._rNADPH = opt_conc[self._compounds.index('rNADPH')]
         
