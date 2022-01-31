@@ -17,7 +17,7 @@ from datafile import R
 class MDF_Result(object):
     
     def __init__(self, opt_conc, dg_prime_opt, overall_dg_prime, dG0_path, reactions, compounds, fixed_c_names, S_netR, rATP_in_reaction, 
-                 T, pH, ph2, pCO2, maxCoA, maxPi, rNADH, rNADPH, rFd, dGatp, dGatp0, ATP_yield, dGprime_hyd,
+                 T, pH, ph2, pCO2, maxCoA, maxPi, rNADH, rNADPH, rFd, dGatp, dGatp0, ATP_yield, ATP_pmf, dGprime_hyd,
                  dGprime_hydABC):
         
         self._opt_conc = opt_conc
@@ -41,6 +41,7 @@ class MDF_Result(object):
         self._dGatp = dGatp
         self._dGatp0 = dGatp0
         self._yATP = ATP_yield
+        self._ATP_pmf = ATP_pmf
         self._dGprime_hyd = dGprime_hyd
         self._dGprime_hydABC = dGprime_hydABC
         
@@ -68,9 +69,13 @@ class MDF_Result(object):
         prod = prod[0:-2]
         
         if self._yATP > 0:
-            prod    += f' (+ {abs(self._yATP):.2f} ATP)'
+            prod    += f' + {abs(self._yATP):.2f} ATP'
         else:
-            sub     += f' (+ {abs(self._yATP):.2f} ATP)'
+            sub     += f' + {abs(self._yATP):.2f} ATP'
+            
+        if self._ATP_pmf:
+            prod    += f' (+ {abs(self._ATP_pmf):.2f} ATP from pmf)'
+
         
         
         #save the netto reaction equation as attribute of object

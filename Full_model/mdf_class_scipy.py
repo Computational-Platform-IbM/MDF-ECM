@@ -266,7 +266,9 @@ class MDF_Analysis(Pathway_cc):
         """     Function to optimize for the MDF of the pathway.
                 Can be done with or without fixed concentrations for specific compounds. 
                 Default is without fixed concentrations or pathway energy.   """
-     
+        
+        
+        
         def max_mdf(ln_conc):  
             i_Pi = self._compounds.index('Pi')
             cH = 10**-self._pH
@@ -278,7 +280,13 @@ class MDF_Analysis(Pathway_cc):
                 
             #the optimization target is the minimum driving force (mdf) of the pathway
             #mdf is the reaction with the least amount of driving force (so the highest value)
-            mdf = max(dg_prime)
+            
+            #don't look at the reactions that are fixed, so ignore indices that are in self._excl_reactions_opt
+            mdf_check = [val for i, val in enumerate(dg_prime) if i not in self._excl_reactions_opt]
+            #check maximum value: that is the minimization target
+            mdf = max(mdf_check)
+            
+            # mdf = max(dg_prime)
             return mdf
         
         #get bounds for scipy minimize
@@ -341,6 +349,9 @@ class MDF_Analysis(Pathway_cc):
         overall_dg0 = self._S_netR_copy.T @ self._dGfprime
         overall_dg_prime = overall_dg0 + ( R*self._T * self._S_netR.T @ res.x ) + ( R * self._T * self._netATP * np.log(rATP) )
         
+        overall_dg_prime2 = overall_dg0 + ( R*self._T * self._S_netR.T @ res.x )
+        print(overall_dg_prime2)
+        
         #Floor values so that float precision does not matter as much
         check = np.floor(sum_dg) - np.floor(overall_dg_prime)
         #If the difference between the two floored values is not zero, something is wrong: raise error
@@ -355,7 +366,9 @@ class MDF_Analysis(Pathway_cc):
             i_Rnf = self._reactions.index('Rnf')
             #ATP produced from pmf = energy available in Rnf divided by the energy that it costs to generate ATP
             #add this to the value that was already there from SLP reactions
-            self._netATP += dg_prime_opt[i_Rnf]/-self._dGatp
+            self._ATP_pmf = dg_prime_opt[i_Rnf]/-self._dGatp
+        else:
+            self._ATP_pmf = None
 
         #create instance of MDF result class
         return MDF_Result(opt_conc, 
@@ -379,6 +392,7 @@ class MDF_Analysis(Pathway_cc):
                           self._dGatp,
                           self._dGatp0,
                           self._netATP,
+                          self._ATP_pmf,
                           self._dGprime_hyd,
                           self._dGprime_hydABC)
     

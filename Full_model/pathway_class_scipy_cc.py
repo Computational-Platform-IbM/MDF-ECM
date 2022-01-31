@@ -102,6 +102,9 @@ class Pathway_cc(object):
         self.calc_dG0_path()
         self.get_dG_rFd()
         
+        #check which reactions should be included from the optimization, as they have only fixed components
+        self.exclude_from_opt()
+        
         #after calculating dg0 of the pathway reactions, remove rATP from the stoichiometric matrix etc
         #save involvement of ATP/ADP in separate array
         i_rATP                  = self._compounds.index('rATP')
@@ -456,6 +459,28 @@ class Pathway_cc(object):
         
         return self._balance_result
     
+    def exclude_from_opt(self):
+        #if a reaction purely uses conserved moieties/components that have fixed concentrations, it should be removed from the optimization
+        #otherwise the optimization can't push past certain reations that are fixed: a different concentration profile could be obtained
+        
+        #get indices of fixed values (e-carriers and components with fixed concentrations)
+        fixed = self._fixed_c_names + ['rFd', 'rNADH', 'rNADPH']
+        i_fixed = [i for i, c in enumerate(self._compounds) if c in fixed]
+        
+        i_exclude_reactions = []
+        
+        #for each reaction, check if the only components participating are fixed
+        #get indices of participating compounds: 
+        for i in range(0, self._stoich.shape[1]):
+            i_participating_compounds = [j for j, c in enumerate(self._compounds) if self._stoich[j,i] != 0]
+            
+            #check if all of them in i_fixed: if so, exclude from optimization
+            if set(i_participating_compounds).issubset(set(i_fixed)):
+                i_exclude_reactions += [i]
+        
+        self._excl_reactions_opt = i_exclude_reactions
+        
+        return
 
     def get_hyd_dg0(self):
         #hydrogenase reaction
