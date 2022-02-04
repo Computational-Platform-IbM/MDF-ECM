@@ -27,6 +27,7 @@ from equilibrator_api import ComponentContribution, Q_
 from typing import Dict, List
 
 import warnings
+#disable runtimewarnings for clarity in output
 warnings.filterwarnings("ignore", category=RuntimeWarning) 
 
 #%%
@@ -56,8 +57,8 @@ class Pathway_cc(object):
         
         #dGprime of reactions used to determine rFd
         #hydrogenase, HydABC complex, Rnf, Nfn
-        #Rnf needs to have dG that allows for the production of 1/4 ATP per proton
-        #Rnf is normalized to 1 
+        #Rnf needs to have dG that allows for the production of 1/4 ATP per proton/electron
+        #Rnf is normalized to 1 NADH: 2 electrons
         self._dGprime_hyd       = 0                 #kJ/mol
         self._dGprime_hydABC    = 0                 #kJ/mol
         self._dGprime_Rnf       = -self._dGatp/2    #kJ/mol
