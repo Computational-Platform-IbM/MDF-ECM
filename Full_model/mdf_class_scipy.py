@@ -133,30 +133,11 @@ class MDF_Analysis(Pathway_cc):
             i_rFd = self._compounds.index('rFd')
             rFd = ln_conc[i_rFd]
             
-            #get rNADH as this is needed for the calculation
-            #NAD+ + 2e- + H+ --> NADH           
-            n       = 2
-            #values from Buckel & Thauer 2013
-            Eprime  = -280e-3                       #V (J/C)
-            
-            dG_NADHprime = -n*F*Eprime/1000           #kJ
-            rNADH_val = np.exp((dG_NADHprime - self._dGf_rNADH)/(R*self._T))
-            
-            #get rNADPH if this is needed for the calculation
-            if 'rNADPH' in self._compounds:
-                #NADP+ + 2e- + H+ --> NADPH
-                n       = 2
-                #values from Buckel & Thauer 2013
-                Eprime  = -380e-3                       #V (J/C)
-                
-                dG_NADPHprime   = -n*F*Eprime/1000           #kJ
-                rNADPH_val      = np.exp((dG_NADPHprime - self._dGf_rNADPH)/(R*self._T))
-            
             ##TODO: show equation where this (x and y etc) is derived from    
             if 'Rnf' in self._reactions:
                 #2 Fdred- + NAD+ + H+ --> 2 Fdox + NADH + pmf
                 # dG' = dG0 + R T ln(...)
-                x = np.exp( (self._dGprime_Rnf - self._dg0_Rnf) /(R*self._T)) / ( rNADH_val )  
+                x = np.exp( (self._dGprime_Rnf - self._dg0_Rnf) /(R*self._T)) / ( self._rNADH)  
                 y = x**(1/2)
                 rFd_val = 1/y
                 
@@ -165,12 +146,12 @@ class MDF_Analysis(Pathway_cc):
                 # Purpose of ferredoxin in cell: hydrogen production for electron sink
                 # 2 Fdred- + NADH + 3H+ --> 2 Fdox + NAD+ + 2 H2
                 # Energy available: related to self._dGprime_hydABC
-                x = np.exp( (self._dGprime_hydABC - self._dg0_hydABC) /(R*self._T)) * ( rNADH_val  / (np.exp( ln_conc[self._compounds.index('H2')] )**2)  )
+                x = np.exp( (self._dGprime_hydABC - self._dg0_hydABC) /(R*self._T)) * ( self._rNADH  / (np.exp( ln_conc[self._compounds.index('H2')] )**2)  )
                 y = x**(1/2)
                 rFd_val = 1/y
             
             elif 'Nfn' in self._reactions:
-                x = np.exp( (self._dGprime_Nfn - self._dg0_Nfn) /(R*self._T)) * ( rNADH_val  / rNADPH_val  )
+                x = np.exp( (self._dGprime_Nfn - self._dg0_Nfn) /(R*self._T)) * ( self._rNADH  / (self._rNADPH**2)  )
                 y = x**(1/2)
                 rFd_val = 1/y
             
@@ -349,8 +330,7 @@ class MDF_Analysis(Pathway_cc):
         overall_dg0 = self._S_netR_copy.T @ self._dGfprime
         overall_dg_prime = overall_dg0 + ( R*self._T * self._S_netR.T @ res.x ) + ( R * self._T * self._netATP * np.log(rATP) )
         
-        overall_dg_prime2 = overall_dg0 + ( R*self._T * self._S_netR.T @ res.x )
-        print(overall_dg_prime2)
+        
         
         #Floor values so that float precision does not matter as much
         check = np.floor(sum_dg) - np.floor(overall_dg_prime)
