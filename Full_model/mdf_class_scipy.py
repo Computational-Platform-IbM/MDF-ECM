@@ -119,7 +119,7 @@ class MDF_Analysis(Pathway_cc):
             return rNADPH - np.log(rNADPH_val)
 
         def con_NADPH_set(ln_conc):
-            i_rNADPH = self._compounds.index('NADPH')    
+            i_rNADPH = self._compounds.index('rNADPH')    
             rNADPH = ln_conc[i_rNADPH]
            
             #value used in optimization should be the same as the value of the attribute that is set by the user
@@ -385,15 +385,20 @@ class MDF_Analysis(Pathway_cc):
         """Set the solver tolerance."""
         self._tol_conc = value
     
-    def sensitivity_analysis(self, var: str, values: List[float], vary_compound_conc = False):
+    def sensitivity_analysis(self, var: str, values: List[float], vary_compound_conc = False, 
+                             set_fixed_c = True, user_defined_rNADH = False, user_defined_rNADPH = False, 
+                             user_defined_rFd = False, phys_bounds = True):
+        
         """Perform a sensitivity analysis of the pathway.
         
         'Var' has to be one of: [T, pH, Pi, CoA, dGprime_hyd, dGprime_hydABC, dGatp, rNADH, rNADPH, rFd]. Unless 'vary_compound_conc' = True, then 'var' can be any compound participating in the reaction.
         
         'Values' has to be a list of floats that are the different values of the parameter for which the pathway will be analyzed."""
         
+        ##TODO: maybe not set it to default, because then you can only fix a single variable; 
+        #say you want to fix both NADH and NADPH
         #begin by setting the Pathway back to default settings every new sensitivity analysis
-        self.to_default()
+        #self.to_default()
         
         #list of options of variables that can be adjusted
         options = ['T', 'pH',  'Pi-pool', 'CoA-pool', 'dGprime_hyd', 'dGprime_hydABC', 'dGatp', 'rNADH', 'rNADPH', 'rFd']
@@ -407,61 +412,61 @@ class MDF_Analysis(Pathway_cc):
             if var == 'T':
                 for i, val in enumerate(values):
                     self.set_T(val)
-                    result = self.execute_mdf_basis(set_fixed_c=True, phys_bounds = True)
+                    result = self.execute_mdf_basis(set_fixed_c, user_defined_rNADH, user_defined_rNADPH, user_defined_rFd, phys_bounds)
                     result_objects += [result]
                     
             if var == 'pH':
                 for i, val in enumerate(values):
                     self.set_ph(val)
-                    result = self.execute_mdf_basis(set_fixed_c=True, phys_bounds = True)
+                    result = self.execute_mdf_basis(set_fixed_c, user_defined_rNADH, user_defined_rNADPH, user_defined_rFd, phys_bounds)
                     result_objects += [result]
                 
             if var == 'Pi-pool':
                 for i, val in enumerate(values):
                     self.set_maxPi(val)
-                    result = self.execute_mdf_basis(set_fixed_c=True, phys_bounds = True)
+                    result = self.execute_mdf_basis(set_fixed_c, user_defined_rNADH, user_defined_rNADPH, user_defined_rFd, phys_bounds)
                     result_objects += [result]
                 
             if var == 'CoA-pool':
                 for i, val in enumerate(values):
                     self.set_maxCoA(val)
-                    result = self.execute_mdf_basis(set_fixed_c=True, phys_bounds = True)
+                    result = self.execute_mdf_basis(set_fixed_c, user_defined_rNADH, user_defined_rNADPH, user_defined_rFd, phys_bounds)
                     result_objects += [result]
                 
             if var == 'dGprime_hyd':
                 for i, val in enumerate(values):
                     self.set_dGprime_hyd(val)
-                    result = self.execute_mdf_basis(set_fixed_c=True, phys_bounds = True)
+                    result = self.execute_mdf_basis(set_fixed_c, user_defined_rNADH, user_defined_rNADPH, user_defined_rFd, phys_bounds)
                     result_objects += [result]
                 
             if var == 'dGprime_hydABC':
                 for i, val in enumerate(values):
                     self.set_dGprime_hydABC(val)
-                    result = self.execute_mdf_basis(set_fixed_c=True, phys_bounds = True)
+                    result = self.execute_mdf_basis(set_fixed_c, user_defined_rNADH, user_defined_rNADPH, user_defined_rFd, phys_bounds)
                     result_objects += [result]
             
             if var == 'dGatp':
                 for i, val in enumerate(values):
                     self.set_dGatp(val)
-                    result = self.execute_mdf_basis(set_fixed_c=True, phys_bounds = True)
+                    result = self.execute_mdf_basis(set_fixed_c, user_defined_rNADH, user_defined_rNADPH, user_defined_rFd, phys_bounds)
                     result_objects += [result]
                 
             if var == 'rNADH':
                 for i, val in enumerate(values):
                     self.set_rNADH(val)
-                    result = self.execute_mdf_basis(set_fixed_c=True, phys_bounds = True,  user_defined_rNADH = True)
+                    result = self.execute_mdf_basis(set_fixed_c, user_defined_rNADH, user_defined_rNADPH, user_defined_rFd, phys_bounds)
                     result_objects += [result]
             
             if var == 'rNADPH':
                 for i, val in enumerate(values):
                     self.set_rNADPH(val)
-                    result = self.execute_mdf_basis(set_fixed_c=True, phys_bounds = True, user_defined_rNADPH = True)
+                    result = self.execute_mdf_basis(set_fixed_c, user_defined_rNADH, user_defined_rNADPH, user_defined_rFd, phys_bounds)
                     result_objects += [result]
             
             if var == 'rFd':
                 for i, val in enumerate(values):
                     self.set_rFd(val)
-                    result = self.execute_mdf_basis(set_fixed_c=True, phys_bounds = True, user_defined_rFd = True)
+                    result = self.execute_mdf_basis(set_fixed_c, user_defined_rNADH, user_defined_rNADPH, user_defined_rFd, phys_bounds)
                     result_objects += [result]
                 
         else:
@@ -469,7 +474,7 @@ class MDF_Analysis(Pathway_cc):
             
             for i, val in enumerate(values):
                 self.fix_compound_value(comp, val)
-                result = self.execute_mdf_basis(set_fixed_c=True, phys_bounds = True)
+                result = self.execute_mdf_basis(set_fixed_c, user_defined_rNADH, user_defined_rNADPH, user_defined_rFd, phys_bounds)
                 result_objects += [result]
         
         if vary_compound_conc == False:
