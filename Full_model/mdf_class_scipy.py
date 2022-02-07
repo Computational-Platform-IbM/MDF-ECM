@@ -133,37 +133,51 @@ class MDF_Analysis(Pathway_cc):
             i_rFd = self._compounds.index('rFd')
             rFd = ln_conc[i_rFd]
             
-            ##TODO: show equation where this (x and y etc) is derived from    
-            if 'Rnf' in self._reactions:
-                #2 Fdred- + NAD+ + H+ --> 2 Fdox + NADH + pmf
-                # dG' = dG0 + R T ln(...)
-                x = np.exp( (self._dGprime_Rnf - self._dg0_Rnf) /(R*self._T)) / ( self._rNADH)  
-                y = x**(1/2)
-                rFd_val = 1/y
+            if self._reaction_for_rFd:
+                rFd_dict = {}
                 
-            elif 'HydABC' in self._reactions:
-                # Relate ratio of ferredoxin directly to hydrogen production through ebif reaction (HydABC complex)
-                # Purpose of ferredoxin in cell: hydrogen production for electron sink
-                # 2 Fdred- + NADH + 3H+ --> 2 Fdox + NAD+ + 2 H2
-                # Energy available: related to self._dGprime_hydABC
-                x = np.exp( (self._dGprime_hydABC - self._dg0_hydABC) /(R*self._T)) * ( self._rNADH  / (np.exp( ln_conc[self._compounds.index('H2')] )**2)  )
-                y = x**(1/2)
-                rFd_val = 1/y
+                ##TODO: show equation where this (x and y etc) is derived from    
+                if 'Rnf' in self._reactions:
+                    #2 Fdred- + NAD+ + H+ --> 2 Fdox + NADH + pmf
+                    # dG' = dG0 + R T ln(...)
+                    x = np.exp( (self._dGprime_Rnf - self._dg0_Rnf) /(R*self._T)) / ( self._rNADH)  
+                    y = x**(1/2)
+                    rFd_dict['Rnf'] = 1/y
+                    
+                if 'HydABC' in self._reactions:
+                    # Relate ratio of ferredoxin directly to hydrogen production through ebif reaction (HydABC complex)
+                    # Purpose of ferredoxin in cell: hydrogen production for electron sink
+                    # 2 Fdred- + NADH + 3H+ --> 2 Fdox + NAD+ + 2 H2
+                    # Energy available: related to self._dGprime_hydABC
+                    x = np.exp( (self._dGprime_hydABC - self._dg0_hydABC) /(R*self._T)) * ( self._rNADH  / (np.exp( ln_conc[self._compounds.index('H2')] )**2)  )
+                    y = x**(1/2)
+                    rFd_dict['HydABC'] = 1/y
+                
+                if 'Nfn' in self._reactions:
+                    x = np.exp( (self._dGprime_Nfn - self._dg0_Nfn) /(R*self._T)) * ( self._rNADH  / (self._rNADPH**2)  )
+                    y = x**(1/2)
+                    rFd_dict['Nfn'] = 1/y
+                
+                if 'hyd'in self._reactions:
+                    # Relate ratio of ferredoxin directly to hydrogen production through hydrogenase reaction
+                    # Purpose of ferredoxin in cell: hydrogen production for electron sink
+                    # 2 Fdred- + 2H+ --> 2 Fdox + H2
+                    # Energy available: related to self._dGprime_hyd
+                    x = np.exp( (self._dGprime_hyd - self._dg0_hyd) /(R*self._T)) * ( 1 / np.exp( ln_conc[self._compounds.index('H2')] )  )
+                    y = x**(1/2)
+                    rFd_dict['hyd'] = 1/y
+                
+                #determine rFd:
+                #all reactions described above require reduced ferredoxin, so..
+                #the reaction that requires the most reduction power to make it feasible, determines rFd
+                #so the max value in the dictionary
+                rFd_val = max(rFd_dict.values())
+                self._reaction_for_rFd = list(rFd_dict.keys())[list(rFd_dict.values()).index(rFd_val)]
             
-            elif 'Nfn' in self._reactions:
-                x = np.exp( (self._dGprime_Nfn - self._dg0_Nfn) /(R*self._T)) * ( self._rNADH  / (self._rNADPH**2)  )
-                y = x**(1/2)
-                rFd_val = 1/y
-            
-            elif 'hyd'in self._reactions:
-                # Relate ratio of ferredoxin directly to hydrogen production through hydrogenase reaction
-                # Purpose of ferredoxin in cell: hydrogen production for electron sink
-                # 2 Fdred- + 2H+ --> 2 Fdox + H2
-                # Energy available: related to self._dGprime_hyd
-                x = np.exp( (self._dGprime_hyd - self._dg0_hyd) /(R*self._T)) * ( 1 / np.exp( ln_conc[self._compounds.index('H2')] )  )
-                y = x**(1/2)
-                rFd_val = 1/y
-            
+                print(rFd_dict)
+                
+            #if there is no reaction to determine rFd (see pathway.get_dG_rFd())
+            #so if self._reaction_for_rFd = None
             else:
                 # Ratio based on electron potential
                 # Fd_ox + + e- --> Fd_red-

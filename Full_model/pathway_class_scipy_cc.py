@@ -355,54 +355,50 @@ class Pathway_cc(object):
                 
                 To this end, the dG0 values of these reactions are stored, so that they can later be used to calculate rFd."""
         
-        ##TODO: can also just calculate rFd here, but then constraints for rFd need updates
-        
-        #get index of rNADH in compounds
+        #get index of rNADH in compounds as some reactions are normalized to rNADH
         i_rNADH = self._compounds_copy.index('rNADH')
         
         #if Rnf complex in system: use this to determine rFd
         #save the dg0 of Rnf complex if this reaction is in the matrix
         if 'Rnf' in self._reactions:
-            self._reaction_for_rFd = 'Rnf'
             i_Rnf = self._reactions.index('Rnf')
-            
-            # self._stoich_rFd = self._stoich[:,i_Rnf]
-            # self._stoich            = np.delete(self._stoich, i_Rnf, axis=1)
             
             #normalize to production of 1 NADH: 2 Fdred- + NAD+ + H+ --> 2 Fdox + NADH + pmf
             self._dg0_Rnf = self._dg0[i_Rnf]/abs(self._stoich_copy[i_rNADH, i_Rnf])
         
         #save the dg0 of hydABC complex if this reaction is in the matrix
-        elif 'hydABC' in self._reactions or 'HydABC' in self._reactions:
+        if 'hydABC' in self._reactions or 'HydABC' in self._reactions:
             if 'hydABC' in self._reactions:
                 i_change = self._reactions.index('hydABC')
                 self._reactions[i_change] = 'HydABC'
             
-            self._reaction_for_rFd = 'HydABC'
             i_hydABC = self._reactions.index('HydABC')
             
             #normalize to production of 1 NAD: 2 Fdred- + NADH + 3H+ --> 2 Fdox + NAD+ + 2 H2
             self._dg0_hydABC = self._dg0[i_hydABC]/abs(self._stoich_copy[i_rNADH, i_hydABC])    
             
         #save the dg0 of Nfn complex if this reaction is in the matrix
-        elif 'Nfn' in self._reactions:
-            self._reaction_for_rFd = 'Nfn'
+        if 'Nfn' in self._reactions:
             i_Nfn = self._reactions.index('Nfn')
             
             #normalize to production of 1 NAD: 2 Fdred- + NADH + 2 NADP+ --> 2 Fdox + NAD+ + 2 NADPH
             self._dg0_Nfn = self._dg0[i_Nfn]/abs(self._stoich_copy[i_rNADH, i_Nfn])
             
         #save or get the dg0 of hydrogenase
-        elif 'hyd' in self._reactions:
-            self._reaction_for_rFd = 'hyd'
+        if 'hyd' in self._reactions:
             i_hyd = self._reactions.index('hyd')
             
             #normalize to production of 1 hydrogen: 2 fdred- + 2 H+ --> 2fdox + H2
             i_H2 = self._compounds.index('H2')
             self._dg0_hyd = self._dg0[i_hyd]/abs(self._stoich_copy[i_H2, i_hyd])
         
-        else:
+        #save how rFd will be determined - this attribute is used in the ferredoxin constraint from mdf_class
+        if ('HydABC' and 'Rnf' and 'Nfn' and 'hyd') not in self._reactions:
+            #set attribute to 'None' if these reactions are not in the pathway - rFd will then be based on E'
             self._reaction_for_rFd = None
+        else:
+            #rFd will be determined based on one of the reactions stated above, but will be determined (tbd) in mdf_class
+            self._reaction_for_rFd = 'tbd in constraint'
             
         return 
     
