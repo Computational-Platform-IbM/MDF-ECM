@@ -172,6 +172,7 @@ class MDF_Analysis(Pathway_cc):
                 #the reaction that requires the most reduction power to make it feasible, determines rFd
                 #so the max value in the dictionary
                 rFd_val = max(rFd_dict.values())
+                #save the name of the reaction determining rFd
                 self._reaction_for_rFd = list(rFd_dict.keys())[list(rFd_dict.values()).index(rFd_val)]
             
                 print(rFd_dict)
@@ -263,7 +264,7 @@ class MDF_Analysis(Pathway_cc):
                 Default is without fixed concentrations or pathway energy.   """
         
         
-        
+        #function that is minimization target
         def max_mdf(ln_conc):  
             i_Pi = self._compounds.index('Pi')
             cH = 10**-self._pH
