@@ -80,8 +80,19 @@ class MDF_Sens_Analysis_Result(object):
         
         #can only do plots of sensitivity analysis of pathways that have the same reactions
         #not necessarily the same stoichiometry!
+        compatible = []
+        #compare all objects that are put together in this one object
+        for i in range(len(result_objects)-1):
+            #check if they share all the same reactions
+            if not all(self._reactions[i][j] == self._reactions[i+1][j] for j, c in enumerate(self._reactions[i])):
+                #if they don't: add a 'False' to the 'compatible' list
+                compatible += [False]
+                #if they share all the same reactions, add 'True' to the 'compatible' list
+            else:
+                compatible += [True]
         
-        if not self._reactions[0] == self._reactions[1]:
+        #Raise incompatibility error if 'compatible' list doesn't contain only True values
+        if not all(boolean == True for boolean in compatible):
             raise ValueError('Pathways of the analyses are not compatible!')
         else:
             self._reactions = self._reactions[0]
