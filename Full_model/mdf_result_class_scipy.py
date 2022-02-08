@@ -18,7 +18,7 @@ class MDF_Result(object):
     
     def __init__(self, opt_conc, dg_prime_opt, overall_dg_prime, dG0_path, reactions, compounds, fixed_c_names, S_netR, rATP_in_reaction, 
                  T, pH, ph2, pCO2, maxCoA, maxPi, rNADH, rNADPH, rFd, dGatp, dGatp0, ATP_yield, ATP_pmf, dGprime_hyd,
-                 dGprime_hydABC):
+                 dGprime_hydABC, excl_reactions_opt):
         
         self._opt_conc = opt_conc
         self._dg_prime_opt = dg_prime_opt
@@ -44,6 +44,7 @@ class MDF_Result(object):
         self._ATP_pmf = ATP_pmf
         self._dGprime_hyd = dGprime_hyd
         self._dGprime_hydABC = dGprime_hydABC
+        self._excl_reactions_opt = excl_reactions_opt
         
         
         
@@ -70,7 +71,7 @@ class MDF_Result(object):
         
         if self._yATP > 0:
             prod    += f' + {abs(self._yATP):.2f} ATP'
-        else:
+        elif self._yATP < 0:
             sub     += f' + {abs(self._yATP):.2f} ATP'
             
         if self._ATP_pmf:
@@ -136,25 +137,41 @@ class MDF_Result(object):
 
         conditions += f'\t Pi-pool = {self._maxPi:.2f} M \t CoA-pool = {self._maxCoA:.2f} M'.expandtabs()
         
+        #get MDF value: the maximum value from the dg_prime_opt values, but ignore the reactions that are excluded from the optimisation
+        MDF    = max([val for i, val in enumerate(self._dg_prime_opt) if i not in self._excl_reactions_opt])
+
+        
         #make figure
         fig = plt.figure(figsize=(13,9))
         plt.suptitle(self._netreaction_eq + '\n\n' + 
                      f'Overall reaction energy: {self._totaldG:.2f} kJ/mol' + 
-                     f'\n MDF = {max(self._dg_prime_opt):.2f} kJ/mol'  +
+                     f'\n MDF = {MDF:.2f} kJ/mol'  +
                      '\n\n' + conditions)
 
         #inidividual deltaG values of reactions
         ax2 = fig.add_subplot(211)
         ax2.title.set_text('Reaction energies')
-        ax2.plot(self._reactions, self._dg0, 'rs', label='dG0 [kJ/mol]', alpha=0.4)
-        ax2.plot(self._reactions, self._dg_prime_opt, 'bo', label = "dG' optimized [kJ/mol]")
+        #ax2.plot(self._reactions, self._dg0, 'rs', label='dG0 [kJ/mol]', alpha=0.4)
+        
+        col = ['b']*len(self._dg_prime_opt)
+        
+        for i, c in enumerate(self._dg_prime_opt):
+            if i in self._excl_reactions_opt:
+                col[i] = 'r'
+        
+        for i in range(len(self._dg_prime_opt)):
+            ax2.scatter(self._reactions[i], self._dg_prime_opt[i], c=col[i])
+            
         ax2.grid()
         ax2.set_ylabel('$\Delta$G [kJ/mol]')
         ax2.set_xlabel('Reactions')
         ax2.xaxis.set_ticks(self._reactions)
         ax2.set_xticklabels(self._reactions, fontsize=8, rotation=90)
-        ax2.legend()
-        #ax2.set_yscale('symlog')
+        
+        legend_elements = [Line2D([0], [0], marker='o', color='w', markerfacecolor='b', label="dG' optimized [kJ/mol]", markersize=7),
+                           Line2D([0], [0], marker='o', color='w', markerfacecolor='r', label="dG' fixed [kJ/mol]", markersize=7)]
+
+        ax2.legend(handles=legend_elements, loc='best')
 
         #concentrations
         remove = []
