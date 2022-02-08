@@ -174,9 +174,7 @@ class MDF_Analysis(Pathway_cc):
                 rFd_val = max(rFd_dict.values())
                 #save the name of the reaction determining rFd
                 self._reaction_for_rFd = list(rFd_dict.keys())[list(rFd_dict.values()).index(rFd_val)]
-            
-                print(rFd_dict)
-                
+
             #if there is no reaction to determine rFd (see pathway.get_dG_rFd())
             #so if self._reaction_for_rFd = None
             else:
@@ -204,12 +202,30 @@ class MDF_Analysis(Pathway_cc):
             
             return rFd - np.log(rFd_val)
 
-        #create list of constraints
-        cons = [{'type': 'eq', 'fun': con_coApool},
-                {'type': 'eq', 'fun': con_Pipool},
-                {'type': 'eq', 'fun': con_H2O}]
+        #create list of constraints, based on what compounds are part of the pathway
+        #start with empty constraint list
+        cons = []
         
-        #conditional additions to constraints
+        #get indices of compounds carrying phosphate
+        i_p = np.where(self._element_comp[:,-2] != 0)[0]
+        #if there are no compounds carrying phosphate in the matrix (left), then length will be either 0 or 1 (Pi will be there)
+        #only account for phosphate pool constraint if there are compounds carrying phosphate
+        if len(i_p) > 1:
+            cons += [{'type': 'eq', 'fun': con_Pipool}]
+        
+        #similar for Pi-pool: constraint for CoA-pool to be included or not
+        #get indices of compounds carrying CoA
+        i_coA = []
+        for i, string in enumerate(self._compounds): 
+            if 'CoA' in string: 
+                i_coA += [i]
+        
+        if len(i_coA) > 0:
+            cons += [{'type': 'eq', 'fun': con_coApool}]
+        
+        if 'H2O' in self._compounds:
+            cons += [{'type': 'eq', 'fun': con_H2O}]
+        
         if 'rNADH' in self._compounds:
             #if rNADH is NOT defined by user, but based on the electron potential
             if user_defined_rNADH == False:
@@ -389,7 +405,8 @@ class MDF_Analysis(Pathway_cc):
                           self._netATP,
                           self._ATP_pmf,
                           self._dGprime_hyd,
-                          self._dGprime_hydABC)
+                          self._dGprime_hydABC,
+                          self._excl_reactions_opt)
     
     @property
     def solver_tol(self):
@@ -409,11 +426,6 @@ class MDF_Analysis(Pathway_cc):
         'Var' has to be one of: [T, pH, Pi, CoA, dGprime_hyd, dGprime_hydABC, dGatp, rNADH, rNADPH, rFd]. Unless 'vary_compound_conc' = True, then 'var' can be any compound participating in the reaction.
         
         'Values' has to be a list of floats that are the different values of the parameter for which the pathway will be analyzed."""
-        
-        ##TODO: maybe not set it to default, because then you can only fix a single variable; 
-        #say you want to fix both NADH and NADPH
-        #begin by setting the Pathway back to default settings every new sensitivity analysis
-        #self.to_default()
         
         #list of options of variables that can be adjusted
         options = ['T', 'pH',  'Pi-pool', 'CoA-pool', 'dGprime_hyd', 'dGprime_hydABC', 'dGatp', 'rNADH', 'rNADPH', 'rFd']
