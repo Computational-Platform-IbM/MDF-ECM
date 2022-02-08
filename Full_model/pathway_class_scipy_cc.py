@@ -392,13 +392,15 @@ class Pathway_cc(object):
             i_H2 = self._compounds.index('H2')
             self._dg0_hyd = self._dg0[i_hyd]/abs(self._stoich_copy[i_H2, i_hyd])
         
+        rFd_reactions = ['HydABC', 'Rnf', 'Nfn', 'hyd']
+        
         #save how rFd will be determined - this attribute is used in the ferredoxin constraint from mdf_class
-        if ('HydABC' and 'Rnf' and 'Nfn' and 'hyd') not in self._reactions:
-            #set attribute to 'None' if these reactions are not in the pathway - rFd will then be based on E'
-            self._reaction_for_rFd = None
-        else:
+        if any(reaction in self._reactions for reaction in rFd_reactions):
             #rFd will be determined based on one of the reactions stated above, but will be determined (tbd) in mdf_class
             self._reaction_for_rFd = 'tbd in constraint'
+        else:
+            #set attribute to 'None' if these reactions are not in the pathway - rFd will then be based on E'
+            self._reaction_for_rFd = None
             
         return 
     
