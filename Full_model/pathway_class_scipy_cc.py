@@ -20,7 +20,10 @@ from datafile import (
     dGatp0,
     default_dGatp,
     default_Pipool,
-    default_CoApool)
+    default_CoApool,
+    default_EP_NADH,
+    default_EP_NADPH,
+    default_EP_Fd)
 
 import scipy.stats
 from equilibrator_api import ComponentContribution, Q_
@@ -49,6 +52,10 @@ class Pathway_cc(object):
         self._rNADH     = None
         self._rNADPH    = None
         self._rFd       = None
+        
+        self._EP_NADH   = default_EP_NADH
+        self._EP_NADPH  = default_EP_NADPH
+        self._EP_Fd     = default_EP_Fd
         
         #set default values for ATP production
         self._dGatp0    = dGatp0
@@ -224,6 +231,15 @@ class Pathway_cc(object):
     def set_rNADH(self, value):
         """Set the NADH/NAD+ ratio."""
         self._rNADH = value
+    
+    @property
+    def EP_NADH(self):
+        """Get the E' of NADH. """
+        return self._EP_NADH
+    
+    def change_EP_NADH(self, value):
+        """Change the E' of NADH. """
+        self._EP_NADH = value
         
     @property
     def rNADPH(self):
@@ -235,6 +251,15 @@ class Pathway_cc(object):
         self._rNADPH = value
     
     @property
+    def EP_NADPH(self):
+        """Get the E' of NADPH. """
+        return self._EP_NADPH
+    
+    def change_EP_NADPH(self, value):
+        """Change the E' of NADPH. """
+        self._EP_NADPH = value
+        
+    @property
     def rFd(self):
         """Get the Fd_red-/Fd_ox ratio."""
         return self._rFd
@@ -242,33 +267,15 @@ class Pathway_cc(object):
     def set_rFd(self, value):
         """Set the Fd_red-/Fd_ox ratio."""
         self._rFd = value
+        
+    @property
+    def EP_Fd(self):
+        """Get the E' of Ferredoxin. """
+        return self._EP_Fd
     
-    # def printreactions(self):
-    #     """ Print all pathway reactions, to see and check if the stoichiometric matrix was set up correctly. """
-    #     equations = {}
-        
-    #     for i, enz in enumerate(self._reactions):
-    #         S = self._stoich[:,i]
-    #         sub = ''
-    #         prod = ''
-    #         for j in range(len(S)):
-    #              if S[j] < 0:
-    #                  sub += f'{abs(S[j])} {self._compounds[j]} + '
-    #              if S[j] > 0:
-    #                 prod += f'{abs(S[j])} {self._compounds[j]} + '
-                    
-    #         sub = sub[0:-2]   #remove extra plus at the end for both sides of the reaction
-    #         prod = prod[0:-2]
-                
-    #         eq = sub + '<--> ' + prod
-    #         equations[enz] = eq
-        
-    #     for key in equations.keys():
-    #         print(f'\n {key}: {equations[key]}')
-        
-    #     self._equations = equations
-        
-    #     return self._equations 
+    def change_EP_Fd(self, value):
+        """Change the E' of Ferredoxin. """
+        self._EP_Fd = value
     
     def get_dGf_prime(self):
         """ Get physiological delta G of formation for all compounds.

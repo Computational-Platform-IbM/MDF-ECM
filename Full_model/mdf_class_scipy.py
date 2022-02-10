@@ -77,10 +77,8 @@ class MDF_Analysis(Pathway_cc):
             
             #NAD+ + 2e- + H+ --> NADH           
             n       = 2
-            #values from Buckel & Thauer 2013
-            Eprime  = -280e-3                       #V (J/C)
-            
-            dG_NADHprime = -n*F*Eprime/1000           #kJ
+
+            dG_NADHprime = -n*F*self._EP_NADH/1000           #kJ
             rNADH_val = np.exp((dG_NADHprime - self._dGf_rNADH)/(R*self._T))
             
             rNADH = ln_conc[i_rNADH]
@@ -105,10 +103,8 @@ class MDF_Analysis(Pathway_cc):
             
             #NADP+ + 2e- + H+ --> NADPH
             n       = 2
-            #values from Buckel & Thauer 2013
-            Eprime  = -380e-3                       #V (J/C)
-            
-            dG_NADPHprime   = -n*F*Eprime/1000           #kJ
+
+            dG_NADPHprime   = -n*F*self._EP_NADPH/1000           #kJ
             rNADPH_val      = np.exp((dG_NADPHprime - self._dGf_rNADPH)/(R*self._T))
             
             rNADPH = ln_conc[i_rNADPH]
@@ -181,11 +177,8 @@ class MDF_Analysis(Pathway_cc):
                 # Ratio based on electron potential
                 # Fd_ox + + e- --> Fd_red-
                 n       = 1
-            
-                # #values from Buckel & Thauer 2013
-                Eprime  = -500e-3                       #V (J/C)
                 
-                dG_Fdprime = -n*F*Eprime/1000           #kJ
+                dG_Fdprime = -n*F*self._EP_Fd/1000           #kJ
                 rFd_val = np.exp((dG_Fdprime - self._dGf_rFd)/(R*self._T))
             
             #save value as attribute
