@@ -463,6 +463,14 @@ class Pathway_cc(object):
             raise ValueError(
                 "One or more of the element and charge balances does not close! Check your reactions.")
         
+        #check elemental balance of overall reaction
+        balance = self._element_comp.T @ self._S_netR
+        
+        #balance should be all (almost) zeros
+        if not np.all(balance <= 10e-12):
+            raise ValueError(
+                "One or more of the element and charge balances does not close! Check your reactions.")
+            
         return self._balance_result
     
     def exclude_from_opt(self):
