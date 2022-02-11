@@ -127,13 +127,15 @@ class MDF_Sens_Analysis_Result(object):
                 self._rNADPH = self._rNADPH[0]
         else:
             self._rNADPH = self._rNADPH[0]
-        
+
         if all(self._rFd):
             all_entries_equal = all(int(element*1e3) == int(self._rFd[0]*1e3) for element in self._rFd)
             if all_entries_equal:
                 self._rFd = self._rFd[0]
         else:
             self._rFd = self._rFd[0]
+            
+
         
         all_entries_equal = all(element == self._dGatp[0] for element in self._dGatp)
         if all_entries_equal:
@@ -313,7 +315,7 @@ class MDF_Sens_Analysis_Result(object):
                 
                 var_i.remove(i_Fd[0])
                 self._change_resulting_from_var = [ 'rFd', self._rFd, '']
-                
+             
             var_i = var_i[0]
             var = [ options[var_i], check_len[var_i], units[var_i]]
             
@@ -348,9 +350,6 @@ class MDF_Sens_Analysis_Result(object):
                 var = ['Stoichiometry', stoichs , '']
             
 
-            
-                
-        
         comp_exceptions = ['H2O', 'rNADH', 'rNADPH', 'rFd', 'CO2', 'H2']
         for i, c in enumerate(comp_exceptions):
             if c not in options and c != 'H2O' and c != var[0]:
