@@ -46,7 +46,8 @@ class MDF_Result(object):
         self._dGprime_hydABC = dGprime_hydABC
         self._excl_reactions_opt = excl_reactions_opt
         
-        
+        #get MDF value: the maximum value from the dg_prime_opt values, but ignore the reactions that are excluded from the optimisation
+        self._MDF = max([val for i, val in enumerate(self._dg_prime_opt) if i not in self._excl_reactions_opt])
         
         i_Pi = self._compounds.index('Pi')
         cH = 10**-self._pH
@@ -137,15 +138,11 @@ class MDF_Result(object):
 
         conditions += f'\t Pi-pool = {self._maxPi:.2f} M \t CoA-pool = {self._maxCoA:.2f} M'.expandtabs()
         
-        #get MDF value: the maximum value from the dg_prime_opt values, but ignore the reactions that are excluded from the optimisation
-        MDF    = max([val for i, val in enumerate(self._dg_prime_opt) if i not in self._excl_reactions_opt])
-
-        
         #make figure
         fig = plt.figure(figsize=(13,9))
         plt.suptitle(self._netreaction_eq + '\n\n' + 
                      f'Overall reaction energy: {self._totaldG:.2f} kJ/mol' + 
-                     f'\n MDF = {MDF:.2f} kJ/mol'  +
+                     f'\n MDF = {self._MDF:.2f} kJ/mol'  +
                      '\n\n' + conditions)
 
         #inidividual deltaG values of reactions

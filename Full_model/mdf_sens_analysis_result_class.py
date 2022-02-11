@@ -19,6 +19,7 @@ class MDF_Sens_Analysis_Result(object):
         
         self._opt_conc          = []
         self._dg_prime_opt      = []
+        self._MDF               = []
         self._totaldG           = []
         self._reactions         = []
         self._compounds         = []
@@ -49,6 +50,7 @@ class MDF_Sens_Analysis_Result(object):
         for i in range(len(result_objects)):
             self._opt_conc          += [result_objects[i]._opt_conc]
             self._dg_prime_opt      += [result_objects[i]._dg_prime_opt]
+            self._MDF               += [result_objects[i]._MDF]
             self._totaldG           += [result_objects[i]._totaldG]
             self._reactions         += [result_objects[i]._reactions]
             self._compounds         += [result_objects[i]._compounds]
@@ -224,7 +226,7 @@ class MDF_Sens_Analysis_Result(object):
         for i in range(len(self._opt_conc)):
             
             
-            lab1 = '$\Delta$G_r = '+ f'{self._totaldG[i]:.2f} kJ/mol \n MDF = {max(self._dg_prime_opt[i]):.2f} kJ/mol \n'
+            lab1 = '$\Delta$G_r = '+ f'{self._totaldG[i]:.2f} kJ/mol \n MDF = {self._MDF[i]:.2f} kJ/mol \n'
             if var[0] == 'Stoichiometry':
                 lab2 = f'{var[0]} {var[1][i]} \n'
             else:
@@ -293,6 +295,7 @@ class MDF_Sens_Analysis_Result(object):
         var_i = [i for i,c in enumerate(check_len) if type(check_len[i]) == list]
         self._change_resulting_from_var = None
         
+        #if it was a compound concentration that was varied:
         if self._vary_comp: 
             var = [self._vary_comp, self._var_conc, 'M' ]
             
@@ -308,14 +311,17 @@ class MDF_Sens_Analysis_Result(object):
             if var_i:
                 var_i = var_i[0]
                 self._change_resulting_from_var = [ options[var_i], check_len[var_i], units[var_i]]
-                    
+        
+        #if var_i has a length that is not 0: can be 0 if it is the stoichiometry that was varied
         elif len(var_i) != 0:
+            #if the length of compounds that differ is more than 1, this is due to a change in rFd because of the change in the other parameter
             if len(var_i) > 1:
                 i_Fd = [i for i in var_i if options[i] == 'rFd']
                 
                 var_i.remove(i_Fd[0])
+                #set this attribute to rFd and its values
                 self._change_resulting_from_var = [ 'rFd', self._rFd, '']
-             
+              
             var_i = var_i[0]
             var = [ options[var_i], check_len[var_i], units[var_i]]
             
