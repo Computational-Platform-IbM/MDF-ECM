@@ -100,7 +100,8 @@ class MDF_Sens_Analysis_Result(object):
             self._reactions = self._reactions[0]
             self._compounds = self._compounds[0]
         
-        if all(self._S_netR[0] == self._S_netR[1]):
+        print(self._S_netR)
+        if all(self._S_netR[0][i] == self._S_netR[1][i] for i, c in enumerate(self._S_netR[0])):
             self._S_netR = [self._S_netR[0]]
             
         all_entries_equal = all(element == self._T[0] for element in self._T)
