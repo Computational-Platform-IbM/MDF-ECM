@@ -25,6 +25,8 @@ default_dGatp   = 50                  #kJ/mol
 default_Pipool  = 20e-3               #M
 default_CoApool = 10e-3               #M
 
+default_c0      = 1e-4                #M
+
 #default E' values for e-carries
 #values from Buckel&Thauer 2013
 default_EP_NADH     = -280e-3                       #V (J/C)

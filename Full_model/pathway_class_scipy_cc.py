@@ -23,7 +23,8 @@ from datafile import (
     default_CoApool,
     default_EP_NADH,
     default_EP_NADPH,
-    default_EP_Fd)
+    default_EP_Fd,
+    default_c0)
 
 import scipy.stats
 from equilibrator_api import ComponentContribution, Q_
@@ -73,7 +74,8 @@ class Pathway_cc(object):
         
         
         #set default tolerance for solver
-        self._tol_conc    = 1e-9
+        self._tol_conc          = 1e-9
+        self._c0                = default_c0        #M
         
         #if excel extension not included in filename, add it to open the file
         if not filename[-5:] == '.xlsx':

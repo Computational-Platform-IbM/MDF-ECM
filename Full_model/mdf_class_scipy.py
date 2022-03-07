@@ -190,7 +190,7 @@ class MDF_Analysis(Pathway_cc):
             i_rFd = self._compounds.index('rFd')
             rFd = ln_conc[i_rFd]
             
-            #Get the value that was set as rNADH from the attribute rNADH of the object
+            #Get the value that was set as rFd from the attribute rFd of the object
             rFd_val = self._rFd
             
             return rFd - np.log(rFd_val)
@@ -285,7 +285,6 @@ class MDF_Analysis(Pathway_cc):
                 
             #the optimization target is the minimum driving force (mdf) of the pathway
             #mdf is the reaction with the least amount of driving force (so the highest value)
-            
             #don't look at the reactions that are fixed, so ignore indices that are in self._excl_reactions_opt
             mdf_check = [val for i, val in enumerate(dg_prime) if i not in self._excl_reactions_opt]
             #check maximum value: that is the minimization target
@@ -312,11 +311,13 @@ class MDF_Analysis(Pathway_cc):
         cons = self.get_constraints(user_defined_rNADH, user_defined_rNADPH, user_defined_rFd)
         
         #initial values
-        conc0 = [np.log(1e-4)] * self._Nc
-        #in E.coli, free Pi = 10 mM
-        i_Pi = self._compounds.index('Pi')
-        conc0[i_Pi] = np.log(10e-3)
-        
+        if type(self._c0) == float:
+            conc0 = [np.log(self._c0)] * self._Nc
+        elif len(self._c0) != self._Nc:
+            raise ValueError('Amount of values in c0 does not match the amount of compounds in the pathway.')
+        else:
+            conc0 = [np.log(self._c0)]
+            
         #call minimizer
         res = minimize(max_mdf, conc0, #method='SLSQP', 
                        tol=self._tol_conc, bounds = bnds, constraints = cons, options = {'maxiter': 2000})
@@ -326,7 +327,7 @@ class MDF_Analysis(Pathway_cc):
             #try again with less tolerance (for example 1e-9 --> 1e-8)
             self.set_solver_tol(self._tol_conc*10)   
            
-            res = minimize(max_mdf, conc0, #method='SLSQP', 
+            res = minimize(max_mdf, conc0, #method='SLSQP',
                            tol=self._tol_conc, bounds = bnds, constraints = cons, options = {'maxiter': 2000})
             
             #if optimizer did not succeed again: raise error with cause of optimization failure
@@ -336,6 +337,8 @@ class MDF_Analysis(Pathway_cc):
         
         #get results
         opt_conc = np.exp(res.x)
+        
+        i_Pi = self._compounds.index('Pi')
         
         #calculate the rATP ratio from the dGprime and dG0 values and [Pi] - the latter which comes from the optimization
         rATP = np.exp( (self._dGatp - self._dGatp0) / (R*self._T)) * opt_conc[i_Pi] * (10**-self._pH)
@@ -409,6 +412,15 @@ class MDF_Analysis(Pathway_cc):
     def set_solver_tol(self, value):
         """Set the solver tolerance."""
         self._tol_conc = value
+    
+    @property
+    def init_conc(self):
+        """Get the initial concentration of compounds for the optimizer."""
+        return self._c0
+    
+    def set_init_conc(self, value):
+        """Get the initial concentration of compounds for the optimizer."""
+        self._c0 = value
     
     def sensitivity_analysis(self, var: str, values: List[float], vary_compound_conc = False, 
                              set_fixed_c = True, user_defined_rNADH = False, user_defined_rNADPH = False, 
