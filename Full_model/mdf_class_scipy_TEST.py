@@ -233,7 +233,6 @@ class MDF_Analysis(Pathway_cc):
             def max_mdf(ln_conc):  
                 cH = 10**-self._pH
                 rATP = np.exp( (self._dGatp - self._dGatp0) / (R*self._T)) * self._cPi * (cH)
-                #print(rATP)
                 
                 #normalise reactions in stoichiometric matrix all to 1 substrate
                 norm = np.amax(self._stoich, axis=0)
@@ -281,7 +280,7 @@ class MDF_Analysis(Pathway_cc):
                 
             #call minimizer
             res = minimize(max_mdf, conc0, #method='SLSQP', 
-                           tol=self._tol_conc, bounds = bnds, constraints = cons, options = {'maxiter': 2000})
+                           tol=self._tol_conc, bounds = bnds, constraints = cons, options = {'disp': True, 'maxiter': 2000})
     
             #check if optimizer succeeded
             if res.success == False:
@@ -289,7 +288,7 @@ class MDF_Analysis(Pathway_cc):
                 self.set_solver_tol(self._tol_conc*10)   
                
                 res = minimize(max_mdf, conc0, #method='SLSQP',
-                               tol=self._tol_conc, bounds = bnds, constraints = cons, options = {'maxiter': 2000})
+                               tol=self._tol_conc, bounds = bnds, constraints = cons, options = {'disp': True, 'maxiter': 2000})
                 
                 #if optimizer did not succeed again: raise error with cause of optimization failure
                 if res.success == False:
@@ -368,22 +367,23 @@ class MDF_Analysis(Pathway_cc):
                     #add moles of phosphate together
                     totalPi += compconc
             
-            print(f'total Pi = {totalPi}, total CoA = {totalCoA}')
-            
             if totalCoA > self._maxCoA:
-                self._cCoA  = self._cCoA - self._cCoA*((totalCoA - self._maxCoA)/totalCoA)
+                newCoA  = self._cCoA - self._cCoA*((totalCoA - self._maxCoA)/totalCoA)
                 
+                if not str(newCoA)[:14] == str(self._cCoA)[:14]:
+                    self._cCoA = newCoA
+                else:
+                    self._cCoA -= 1e-9
             if totalPi > self._maxPi:
-                self._cPi  = self._cPi - self._cPi*((totalPi - self._maxPi)/totalPi)
-            
-            print(f'[CoA] = {self._cCoA}')
-            print(f'[Pi] = {self._cPi}')
+                newPi  = self._cPi - self._cPi*((totalPi - self._maxPi)/totalPi)
+                
+                if not str(newPi)[:14] == str(self._cPi)[:14]:
+                    self._cPi = newPi
+                else:
+                    self._cPi -= 1e-9
         
         print(f'{(totalPi/self._maxPi)*100:.2f} % of Pi-pool used')
         print(f'{(totalCoA/self._maxCoA)*100:.2f} % of CoA-pool used')
-        
-        for i in i_coA:
-            print(self._compounds[i])
             
         #create instance of MDF result class
         return MDF_Result(opt_conc, 

@@ -122,6 +122,7 @@ class Pathway_cc(object):
         self._netATP            = self._S_netR[i_rATP]
         self._netATP_copy       = self._netATP.copy()
         self._S_netR_copy       = self._S_netR.copy()
+        self._fixed_c_copy      = self._fixed_c.copy()
 
         #remove rATP from matrix and arrays
         self._compounds.pop(i_rATP)
@@ -130,8 +131,8 @@ class Pathway_cc(object):
         self._element_comp      = np.delete(self._element_comp, i_rATP, axis=0)
         self._S_netR            = np.delete(self._S_netR, i_rATP)
         
-        self._fixed_c_copy      = list(self._fixed_c)
-        self._init_values       = {'T': T, 'pH': pH, 'original fixed conc': self._fixed_c_copy}
+        self._fixed_c_copy_val  = list(self._fixed_c)
+        self._init_values       = {'T': T, 'pH': pH, 'original fixed conc': self._fixed_c_copy_val}
         
         #get number of compounds and reactions in pathway
         self._Nc, self._Nr  = self._stoich.shape
