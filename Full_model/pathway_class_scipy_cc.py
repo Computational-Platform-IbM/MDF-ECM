@@ -353,12 +353,12 @@ class Pathway_cc(object):
                 This is automatically called when a new pathway is initialized. """
                 
         #calculate dg0 values based on compound formation energies provided
-        norm = np.amax(self._stoich, axis=0)
-        S = self._stoich/norm
+        # norm = np.amax(self._stoich, axis=0)
+        # S = self._stoich/norm
         
-        self._dg0 = S.T @ self._dGfprime
+        # self._dg0 = S.T @ self._dGfprime
         
-        # self._dg0 = self._stoich_copy.T @ self._dGfprime
+        self._dg0 = self._stoich_copy.T @ self._dGfprime
         
         #save all dg0 values as attribute of the pathway object
         return self._dg0
