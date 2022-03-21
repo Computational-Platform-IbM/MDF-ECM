@@ -9,3 +9,4 @@ Full_model/run.py
 Full_model/glu_to_ac_ebif.py
 Excel stoich sheets/glu_to_ac_but_option2.xlsx
 Excel stoich sheets/glu_to_acetic_butyric.xlsx
+Full_model/mdf_class_scipy_2nd_min.py
