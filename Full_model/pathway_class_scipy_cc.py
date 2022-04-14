@@ -69,7 +69,7 @@ class Pathway_cc(object):
         #Rnf is normalized to 1 NADH: 2 electrons
         self._dGprime_hyd       = 0                 #kJ/mol
         self._dGprime_hydABC    = 0                 #kJ/mol
-        self._dGprime_Rnf       = -self._dGatp/2    #kJ/mol
+        self._dGprime_Rnf       = -self._dGatp/3    #kJ/mol
         self._dGprime_Nfn       = 0                 #kJ/mol
         
         
@@ -565,7 +565,7 @@ class Pathway_cc(object):
         
         self._dGprime_hyd       = 0                 #kJ/mol
         self._dGprime_hydABC    = 0                 #kJ/mol
-        self._dGprime_Rnf       = -self._dGatp/2    #kJ/mol
+        self._dGprime_Rnf       = -self._dGatp/3    #kJ/mol
         self._dGprime_Nfn       = 0                 #kJ/mol
         
         self._tol_conc          = 1e-9
