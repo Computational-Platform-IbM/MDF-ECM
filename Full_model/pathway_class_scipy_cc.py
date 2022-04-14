@@ -581,3 +581,17 @@ class Pathway_cc(object):
         self._fixed_c[i_comp] = conc
         
         return self._fixed_c
+
+    def get_dg0_without_ecarrier(self, e_carr):
+        try:
+            i_ecarrier = self._compounds_copy.index(e_carr)
+        except:
+            warnings.warn('This e-carrier was not found in the compounds.')
+            return 
+        
+        dGfprime_no_ecarrier = np.delete(self._dGfprime, i_ecarrier)
+        S_no_ecarrier = np.delete(self._stoich_copy, i_ecarrier, axis=0)
+       
+        dg0_no_ecarrier = (S_no_ecarrier.T @ dGfprime_no_ecarrier)/self._rel_flux
+        
+        return dg0_no_ecarrier

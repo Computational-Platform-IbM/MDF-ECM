@@ -362,5 +362,5 @@ class MDF_Sens_Analysis_Result(object):
                 if c in self._compounds:
                     i_c = self._compounds.index(c)
                     conditions += f'\t {c} = {self._opt_conc[0][i_c]:.2e} M '.expandtabs()
-                
+        
         return conditions, var

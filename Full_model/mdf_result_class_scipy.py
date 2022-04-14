@@ -18,7 +18,7 @@ class MDF_Result(object):
     
     def __init__(self, opt_conc, dg_prime_opt, overall_dg_prime, dG0_path, reactions, compounds, fixed_c_names, S_netR, rATP_in_reaction, 
                  T, pH, ph2, pCO2, maxCoA, maxPi, rNADH, rNADPH, rFd, dGatp, dGatp0, ATP_yield, ATP_pmf, dGprime_hyd,
-                 dGprime_hydABC, excl_reactions_opt):
+                 dGprime_hydABC, excl_reactions_opt, rel_flux):
         
         self._opt_conc = opt_conc
         self._dg_prime_opt = dg_prime_opt
@@ -45,9 +45,10 @@ class MDF_Result(object):
         self._dGprime_hyd = dGprime_hyd
         self._dGprime_hydABC = dGprime_hydABC
         self._excl_reactions_opt = excl_reactions_opt
+        self._rel_flux  = rel_flux
         
         #get MDF value: the maximum value from the dg_prime_opt values, but ignore the reactions that are excluded from the optimisation
-        self._MDF = max([val for i, val in enumerate(self._dg_prime_opt) if i not in self._excl_reactions_opt])
+        self._MDF = -max([val/self._rel_flux[i] for i, val in enumerate(self._dg_prime_opt) if i not in self._excl_reactions_opt])
         
         i_Pi = self._compounds.index('Pi')
         cH = 10**-self._pH

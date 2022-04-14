@@ -8,6 +8,7 @@ Created on Fri Oct  1 14:23:24 2021
 import numpy as np
 from scipy.optimize import minimize
 from scipy.linalg import lstsq
+import random
 
 from datafile import (
     def_c_max,
@@ -20,7 +21,6 @@ from mdf_result_class_scipy import MDF_Result
 from mdf_sens_analysis_result_class import MDF_Sens_Analysis_Result
 import warnings
 from typing import Dict, List
-import matplotlib.pyplot as plt
 
 #%%
 class MDF_Analysis(Pathway_cc):
@@ -281,14 +281,14 @@ class MDF_Analysis(Pathway_cc):
             cH = 10**-self._pH
             
             #normalise reactions in stoichiometric matrix all to 1 substrate
-            S = self._stoich/self._rel_flux
-            rATP_in_r = self._rATP_in_reaction/self._rel_flux
-            dg0 = self._dg0/self._rel_flux
+            #norm = np.amax(self._stoich, axis=0)
+            S = self._stoich#/norm
+            rATP_in_r = self._rATP_in_reaction#/norm
             
             rATP = np.exp( (self._dGatp - self._dGatp0) / (R*self._T)) * np.exp(ln_conc[i_Pi]) * (cH)
             
             #set dg_prime as a function of dg0_prime and variables ln_conc
-            dg_prime = dg0 + ( R*self._T * S.T @ ln_conc ) + ( R * self._T * rATP_in_r * np.log(rATP) )
+            dg_prime = self._dg0 + ( R*self._T * S.T @ ln_conc ) + ( R * self._T * rATP_in_r * np.log(rATP) )
                 
             #the optimization target is the minimum driving force (mdf) of the pathway
             #mdf is the reaction with the least amount of driving force (so the highest value)
@@ -297,8 +297,8 @@ class MDF_Analysis(Pathway_cc):
             #check maximum value: that is the minimization target
             mdf = max(mdf_check)
             
+            # mdf = max(dg_prime)
             return mdf
-            # return np.std(mdf_check)
         
         #get bounds for scipy minimize
         bnds = self.get_bounds(phys_bounds)
@@ -317,34 +317,122 @@ class MDF_Analysis(Pathway_cc):
         #get constraints for scipy minimize
         cons = self.get_constraints(user_defined_rNADH, user_defined_rNADPH, user_defined_rFd)
         
-        #initial values
-        if type(self._c0) == float:
-            conc0 = [np.log(self._c0)] * self._Nc
-        elif len(self._c0) != self._Nc:
-            raise ValueError('Amount of values in c0 does not match the amount of compounds in the pathway.')
-        else:
-            conc0 = [np.log(self._c0)]
-            
-        #call minimizer
-        res = minimize(max_mdf, conc0, #method='SLSQP', 
-                       tol=self._tol_conc, bounds = bnds, constraints = cons, jac='3-point', options = {'disp': False, 'maxiter': 2000})
+        all_MDF = []
+        all_i_MDF = []
         
+        for j in range(0,10):
+            c0 = np.zeros(self._Nc)
+            factor = [1, 1e-1, 1e-2, 1e-3, 1e-4]
+            
+            random.seed()
+            #generate random initial concentrations
+            for i in range(len(c0)):
+                i_rf = random.randint(0, len(factor)-1)
+                random_factor = factor[i_rf]
+                c0_i = random.random() * random_factor
+                if c0_i < 1e-6:
+                    c0_i = 1e-6
+                elif c0_i > 1e-2:
+                    c0_i = 1e-2
+                c0[i] = c0_i
+            
+            self.set_init_conc(c0)
+            
+            #call minimizer
+            res = minimize(max_mdf, c0, #method='SLSQP', 
+                           tol=self._tol_conc, bounds = bnds, constraints = cons, jac='3-point', options = {'disp': False, 'maxiter': 2000})
+
+            #check if optimizer succeeded
+            if res.success == False:
+                #try again with less tolerance (for example 1e-9 --> 1e-8)
+                self.set_solver_tol(self._tol_conc*10)   
+               
+                res = minimize(max_mdf, c0, #method='SLSQP',
+                               tol=self._tol_conc, bounds = bnds, constraints = cons, jac='3-point', options = {'disp': False, 'maxiter': 2000})
+                
+                #if optimizer did not succeed again: raise error with cause of optimization failure
+                if res.success == False:
+                    raise ValueError(
+                        f"Optimization failed: {res.message}")
+            
+            #get results
+            opt_conc = np.exp(res.x)
+
+            #norm = np.amax(self._stoich, axis=0)
+            S = self._stoich#/norm
+            rATP_in_r = self._rATP_in_reaction#/norm
+            
+            i_Pi = self._compounds.index('Pi')
+            
+            #calculate the rATP ratio from the dGprime and dG0 values and [Pi] - the latter which comes from the optimization
+            rATP = np.exp( (self._dGatp - self._dGatp0) / (R*self._T)) * opt_conc[i_Pi] * (10**-self._pH)
+            dg_prime_opt = self._dg0 + ( R*self._T * S.T @ res.x ) + ( R * self._T * rATP_in_r * np.log(rATP) )
+            
+            MDF_val = max(dg_prime_opt)
+            i_MDF   = np.where(dg_prime_opt == MDF_val)
+            
+            all_MDF     += [MDF_val]
+            all_i_MDF   += [i_MDF]
+        
+        print(all_MDF)
+        
+        ub_dg = min(all_MDF)
+        print(ub_dg)
+        
+        cH = 10**-self._pH
+        i_Pi = self._compounds.index('Pi')
+        
+        rATP_in_r = self._rATP_in_reaction
+        
+        for i in range(len(self._dg0)):
+            if not i in self._excl_reactions_opt:
+                cons += [{'type': 'ineq', 'fun': lambda ln_conc: -(self._dg0[i] + ( R*self._T * self._stoich[:,i].T @ ln_conc ) + ( R * self._T * rATP_in_r[i] * np.log(np.exp( (self._dGatp - self._dGatp0) / (R*self._T)) * np.exp(ln_conc[i_Pi]) * (cH)) ) )}]#- ub_dg)}]
+
+        cons2 = cons
+        
+        def min_stdv_dg(ln_conc):
+            i_Pi = self._compounds.index('Pi')
+            cH = 10**-self._pH
+            
+            #normalise reactions in stoichiometric matrix all to 1 substrate
+            #norm = np.amax(self._stoich, axis=0)
+            S = self._stoich#/norm
+            rATP_in_r = self._rATP_in_reaction#/norm
+            
+            rATP = np.exp( (self._dGatp - self._dGatp0) / (R*self._T)) * np.exp(ln_conc[i_Pi]) * (cH)
+            
+            #set dg_prime as a function of dg0_prime and variables ln_conc
+            dg_prime = self._dg0 + ( R*self._T * S.T @ ln_conc ) + ( R * self._T * rATP_in_r * np.log(rATP) )
+            
+            #mdf is the reaction with the least amount of driving force (so the highest value)
+            #don't look at the reactions that are fixed, so ignore indices that are in self._excl_reactions_opt
+            mdf_check = [val for i, val in enumerate(dg_prime) if i not in self._excl_reactions_opt]
+            
+            #minimize standard deviation between mdfs to distribute energy as evenly as possible
+            std_mdf = np.std(mdf_check)
+            
+            return std_mdf
+        
+        #call minimizer
+        res2 = minimize(min_stdv_dg, c0, #method='SLSQP', 
+                       tol=self._tol_conc, bounds = bnds, constraints = cons2, jac='3-point', options = {'disp': False, 'maxiter': 2000})
+
         #check if optimizer succeeded
-        if res.success == False:
+        if res2.success == False:
             #try again with less tolerance (for example 1e-9 --> 1e-8)
             self.set_solver_tol(self._tol_conc*10)   
            
-            res = minimize(max_mdf, conc0, #method='SLSQP',
-                           tol=self._tol_conc, bounds = bnds, constraints = cons, jac='3-point', options = {'disp': False, 'maxiter': 2000})
+            res2 = minimize(min_stdv_dg, c0, #method='SLSQP',
+                           tol=self._tol_conc, bounds = bnds, constraints = cons2, jac='3-point', options = {'disp': False, 'maxiter': 2000})
             
             #if optimizer did not succeed again: raise error with cause of optimization failure
-            if res.success == False:
+            if res2.success == False:
                 raise ValueError(
                     f"Optimization failed: {res.message}")
         
         #get results
-        opt_conc = np.exp(res.x)
-        
+        opt_conc2 = np.exp(res2.x)
+
         #norm = np.amax(self._stoich, axis=0)
         S = self._stoich#/norm
         rATP_in_r = self._rATP_in_reaction#/norm
@@ -352,26 +440,21 @@ class MDF_Analysis(Pathway_cc):
         i_Pi = self._compounds.index('Pi')
         
         #calculate the rATP ratio from the dGprime and dG0 values and [Pi] - the latter which comes from the optimization
-        rATP = np.exp( (self._dGatp - self._dGatp0) / (R*self._T)) * opt_conc[i_Pi] * (10**-self._pH)
-        dg_prime_opt = self._dg0 + ( R*self._T * S.T @ res.x ) + ( R * self._T * rATP_in_r * np.log(rATP) )
-        
-        #dg_prime_opt = dg_prime_opt * norm
+        rATP = np.exp( (self._dGatp - self._dGatp0) / (R*self._T)) * opt_conc2[i_Pi] * (10**-self._pH)
+        dg_prime_opt = self._dg0 + ( R*self._T * S.T @ res2.x ) + ( R * self._T * rATP_in_r * np.log(rATP) )
         
         #get e-carrier ratios from optimization and save
         if 'rNADH' in self._compounds:
             i_rNADH = self._compounds.index('rNADH')
-            self._rNADH = opt_conc[i_rNADH]
+            self._rNADH = opt_conc2[i_rNADH]
         if 'rNADPH' in self._compounds:
-            self._rNADPH = opt_conc[self._compounds.index('rNADPH')]
+            self._rNADPH = opt_conc2[self._compounds.index('rNADPH')]
         
         #Check results: sum dgs equal to overall dg?
         sum_dg = sum(dg_prime_opt)
         
-        overall_dg_prime = sum_dg
         overall_dg0 = self._S_netR_copy.T @ self._dGfprime
-        overall_dg_prime = overall_dg0 + ( R*self._T * self._S_netR.T @ res.x ) + ( R * self._T * self._netATP * np.log(rATP) )
-        
-        
+        overall_dg_prime = overall_dg0 + ( R*self._T * self._S_netR.T @ res2.x ) + ( R * self._T * self._netATP * np.log(rATP) )
         
         #Floor values so that float precision does not matter as much
         check = np.floor(sum_dg) - np.floor(overall_dg_prime)
@@ -416,168 +499,7 @@ class MDF_Analysis(Pathway_cc):
                           self._ATP_pmf,
                           self._dGprime_hyd,
                           self._dGprime_hydABC,
-                          self._excl_reactions_opt,
-                          self._rel_flux)
-    
-    def optimize_concentrations(self, user_defined_rNADH = False, user_defined_rNADPH = False, user_defined_rFd = False, dg_target = 0):
-        
-        #optimisation target
-        def find_conc(ln_conc):
-            sum_penalties = 0
-            
-            comp_exceptions = ['rFd', 'rNADH', 'rNADPH']
-            
-            #look at all concentrations
-            for i in range(len(ln_conc)):
-                if self._compounds[i] not in comp_exceptions:
-                    #are they higher than the phys. maximum?
-                    if np.exp(ln_conc[i]) > 1e-2:
-                        #add the difference between the value and phys. maximum as a penalty
-                        sum_penalties   += ln_conc[i] - np.log(1e-2)
-                    #are they lower than the phys. minimum?
-                    if np.exp(ln_conc[i]) < 1e-6:
-                        #add the difference between the phys. minimum and the value as a penalty
-                        sum_penalties   += np.log(1e-6) - (ln_conc[i])
-             
-            #scale the objective function: target cannot be too big
-            return (sum_penalties/1e5) 
-    
-        #get bounds for optimisation
-        #this approach doesn't work with phys bounds - contrary to mdf - so pass no argument to self.get_bounds(); default is False
-        bnds = self.get_bounds()
-        
-        #fixing product/substrate concentrations, update bounds for that compound
-        #loop through array of fixed_c to check for specified concentrations
-        for i in range(len(self._fixed_c)):
-            if not np.isnan(self._fixed_c[i]):
-                #set bound as very small window of [specified value , specified value + 1e-9]
-                bnds[i] = (np.log(self._fixed_c[i]), np.log(self._fixed_c[i]+1e-9))
-        
-        #convert bounds list to tuple; required for scipy.optimize.minimize
-        bnds = tuple(bnds)
-        
-        #get constraints for scipy minimize
-        cons = self.get_constraints(user_defined_rNADH, user_defined_rNADPH, user_defined_rFd)
-        
-        def con_ineq(ln_conc):
-            i_Pi = self._compounds.index('Pi')
-            cH = 10**-self._pH
-            
-            S = self._stoich/self._rel_flux
-            rATP_in_r = self._rATP_in_reaction/self._rel_flux
-            dg0 = self._dg0/self._rel_flux
-            
-            rATP = np.exp( (self._dGatp - self._dGatp0) / (R*self._T)) * np.exp(ln_conc[i_Pi]) * (cH)
-            #set dg_prime as a function of dg0_prime and variables ln_conc
-            #dg_prime = self._dg0 + ( R*self._T * self._stoich.T @ ln_conc ) + ( R * self._T * self._rATP_in_reaction * np.log(rATP) )
-            
-            dg_prime = dg0 + ( R*self._T * S.T @ ln_conc ) + ( R * self._T * rATP_in_r * np.log(rATP) )
-            
-            #exclude fixed reactions from inequality constraint
-            dg_prime = np.delete(dg_prime, self._excl_reactions_opt)
-            return -(dg_prime+dg_target)
-        
-        cons += [{'type': 'ineq', 'fun': con_ineq}]
-        
-        #initial values
-        if type(self._c0) == float:
-            conc0 = [np.log(self._c0)] * self._Nc
-        elif len(self._c0) != self._Nc:
-            raise ValueError('Amount of values in c0 does not match the amount of compounds in the pathway.')
-        else:
-            conc0 = [np.log(self._c0)]
-            
-        #call minimizer
-        res = minimize(find_conc, conc0, #method='SLSQP', 
-                       tol=self._tol_conc, bounds = bnds, constraints = cons, jac='3-point', options = {'disp': False, 'maxiter': 2000})
-        
-        #check if optimizer succeeded
-        if res.success == False:
-            #try again with less tolerance (for example 1e-9 --> 1e-8)
-            self.set_solver_tol(self._tol_conc*10)   
-           
-            res = minimize(find_conc, conc0, #method='SLSQP',
-                           tol=self._tol_conc, bounds = bnds, constraints = cons, jac='3-point', options = {'disp': False, 'maxiter': 2000})
-            
-            #if optimizer did not succeed again: raise error with cause of optimization failure
-            if res.success == False:
-                raise ValueError(
-                    f"Optimization failed: {res.message}")
-
-        
-        #get results
-        opt_conc = np.exp(res.x)
-        
-        S = self._stoich
-        rATP_in_r = self._rATP_in_reaction
-        i_Pi = self._compounds.index('Pi')
-        
-        #calculate the rATP ratio from the dGprime and dG0 values and [Pi] - the latter which comes from the optimization
-        rATP = np.exp( (self._dGatp - self._dGatp0) / (R*self._T)) * opt_conc[i_Pi] * (10**-self._pH)
-        dg_prime_opt = self._dg0 + ( R*self._T * S.T @ res.x ) + ( R * self._T * rATP_in_r * np.log(rATP) )
-        
-        
-        #get e-carrier ratios from optimization and save
-        if 'rNADH' in self._compounds:
-            i_rNADH = self._compounds.index('rNADH')
-            self._rNADH = opt_conc[i_rNADH]
-        if 'rNADPH' in self._compounds:
-            self._rNADPH = opt_conc[self._compounds.index('rNADPH')]
-        
-        #Check results: sum dgs equal to overall dg?
-        sum_dg = sum(dg_prime_opt)
-        
-        overall_dg_prime = sum_dg
-        overall_dg0 = self._S_netR_copy.T @ self._dGfprime
-        overall_dg_prime = overall_dg0 + ( R*self._T * self._S_netR.T @ res.x ) + ( R * self._T * self._netATP * np.log(rATP) )
-        
-        
-        
-        #Floor values so that float precision does not matter as much
-        # check = np.floor(sum_dg) - np.floor(overall_dg_prime)
-        # #If the difference between the two floored values is not zero, something is wrong: raise error
-        # if check != 0:
-        #     raise ValueError(
-        #         "The sum of reaction energies is not equal to the overall reaction energy!")
-       
-        plot_dg0 = self._dg0
-        
-        #account for extra ATP production in system through pmf
-        if 'Rnf' in self._reactions:
-            i_Rnf = self._reactions.index('Rnf')
-            #ATP produced from pmf = energy available in Rnf divided by the energy that it costs to generate ATP
-            #add this to the value that was already there from SLP reactions
-            self._ATP_pmf = dg_prime_opt[i_Rnf]/-self._dGatp
-        else:
-            self._ATP_pmf = None
-
-        #create instance of MDF result class
-        return MDF_Result(opt_conc, 
-                          dg_prime_opt, 
-                          overall_dg_prime,
-                          plot_dg0,  
-                          self._reactions, 
-                          self._compounds, 
-                          self._fixed_c_names,
-                          self._S_netR, 
-                          self._rATP_in_reaction,
-                          self._T, 
-                          self._pH, 
-                          self._pH2, 
-                          self._pCO2,
-                          self._maxCoA, 
-                          self._maxPi, 
-                          self._rNADH, 
-                          self._rNADPH,
-                          self._rFd,
-                          self._dGatp,
-                          self._dGatp0,
-                          self._netATP,
-                          self._ATP_pmf,
-                          self._dGprime_hyd,
-                          self._dGprime_hydABC,
-                          self._excl_reactions_opt,
-                          self._rel_flux)
+                          self._excl_reactions_opt)
     
     @property
     def solver_tol(self):
@@ -689,11 +611,43 @@ class MDF_Analysis(Pathway_cc):
         else:
             return MDF_Sens_Analysis_Result(result_objects, comp, values)
 
-    def model_dg_eq(self, user_defined_rNADH = False, user_defined_rNADPH = False, user_defined_rFd = False):
+    def model_dg_fixed(self, equilibrium=True):
         
-        #equilibrium modeling
-        dg_prime = np.zeros(len(self._dg0))            #kJ/mol
+        if equilibrium == True:
+            #equilibrium modeling
+            dg_prime = np.zeros(len(self._dg0))            #kJ/mol
             
+        else:
+            #TODO: divide reaction energy accordingly over all reactions
+            rATP = np.exp( (self._dGatp - self._dGatp0) / (R*self._T)) * 10e-3 * (10**-self._pH)
+            
+            #determine overall reaction energy
+            overall_dg0 = self._S_netR_copy.T @ self._dGfprime
+  
+            fixed_c = self._fixed_c.copy()
+            fixed_c[np.isnan(fixed_c)] = 0
+            
+            overall_dg_prime = overall_dg0 + ( R*self._T * self._S_netR @ fixed_c ) + ( R * self._T * self._netATP * np.log(rATP) )
+
+            #TODO: subtract reaction energy of fixed reactions
+            dg_fixed = 0
+            dg_left = overall_dg_prime - dg_fixed
+            
+            #distribute remaining energy evenly (per mole of 1 substrate)
+            norm = np.amax(self._stoich, axis=0)
+            #don't account for reactions with fixed dg
+            norm = np.delete(norm, self._excl_reactions_opt)
+            tot = np.sum(norm)
+            
+            #for each reaction, dg available per mole of substrate
+            dg_per_s = dg_left/tot
+
+            #per reaction: multiply dg per substrate with amount of substrate
+            dg_prime = dg_per_s * norm
+            #add zeros to dg_prime to ensure right length; this is corrected later 
+            for i in self._excl_reactions_opt:
+                dg_prime = np.append(dg_prime, 0)
+                
         #right-hand-side of system for equations related to dg
         rhs_dg = (dg_prime - self._dg0)/(R*self._T)
         #on the left side: stoichiometric matrix - use stoich_copy to include rATP
@@ -714,7 +668,7 @@ class MDF_Analysis(Pathway_cc):
                 fixed[i]    = 1
                 c_fixed     = self._fixed_c_copy_val[i]         #M
                 if c_fixed == 0:
-                    print('No substrate concentration was given. Automatically set to 10 mM.')
+                    print('No product concentration was given. Automatically set to 10 mM.')
                     c_fixed = 0.01                          #M
                 b_fixed     = np.log(c_fixed)              
                 
@@ -727,13 +681,7 @@ class MDF_Analysis(Pathway_cc):
         res     = lstsq(A, b)
         ln_x    = res[0]
         x       = np.exp(ln_x)
-        
-        dg0 = np.delete(self._dg0, self._excl_reactions_opt)
-        check_dg_prime = dg0 + ( R*self._T * S.T @ ln_x )
-        
-        self.plot_eq_results(x, check_dg_prime, dg0)
-        
-        return x#, res, check_dg_prime
+        return x
     
     def lstsq_other_constraints(self, A, b):
         comps = self._compounds_copy.copy()
@@ -768,7 +716,7 @@ class MDF_Analysis(Pathway_cc):
             i_rNADH         = comps.index('rNADH')
             fixed           = np.zeros(nc)
             fixed[i_rNADH]  = 1 
-            b_fixed         = np.log(0.02173249080252788)          #currently hardcoded value - but link to same approach as for constraints?
+            b_fixed         = np.log(0.3)          #currently arbitrary value - but link to same approach as for constraints?
             
             A = np.vstack((A, fixed))
             b = np.hstack((b, b_fixed))
@@ -790,7 +738,7 @@ class MDF_Analysis(Pathway_cc):
             i_rFd           = comps.index('rFd')
             fixed           = np.zeros(nc)
             fixed[i_rFd]    = 1
-            b_fixed         = np.log(0.909)          #currently arbitrary value - but link to same approach as for constraints?
+            b_fixed         = np.log(0.5)          #currently arbitrary value - but link to same approach as for constraints?
             
             A = np.vstack((A, fixed))
             b = np.hstack((b, b_fixed))
@@ -816,7 +764,7 @@ class MDF_Analysis(Pathway_cc):
             i_H2        = comps.index('H2')
             fixed       = np.zeros(nc)
             fixed[i_H2] = 1
-            b_fixed     = np.log(1e-5)          #M - currently arbitrary value - link to pH2
+            b_fixed     = np.log(1e-6)          #M - currently arbitrary value - link to pH2
             
             A = np.vstack((A, fixed))
             b = np.hstack((b, b_fixed))
@@ -828,7 +776,7 @@ class MDF_Analysis(Pathway_cc):
             i_CO2 = comps.index('CO2')
             fixed       = np.zeros(nc)
             fixed[i_CO2] = 1
-            b_fixed     = np.log(1e-5)          #M - currently arbitrary value - link to pH2
+            b_fixed     = np.log(1e-6)          #M - currently arbitrary value - link to pH2
             
             A = np.vstack((A, fixed))
             b = np.hstack((b, b_fixed))
@@ -847,84 +795,3 @@ class MDF_Analysis(Pathway_cc):
             pass
         
         return A, b
-    
-    def plot_eq_results(self, x, check_dg_prime, dg0):
-        comp_exceptions = ['H2O', 'rNADH', 'rNADPH', 'rFd', 'rATP']
-        conditions = ''
-        
-        for comp in comp_exceptions:
-            if comp in self._compounds_copy and comp != 'H2O':
-                if comp[0] == 'r':
-                    i = self._compounds_copy.index(comp)
-                    conditions += f'\t {comp} = {x[i]:.3e}'.expandtabs()  
-                else:
-                    i = self._compounds_copy.index(comp)
-                    conditions += f'\t [{comp}] = {x[i]:.2e} M'.expandtabs()
-                    
-        #concentrations
-        remove = []
-        for i, comp in enumerate(self._compounds_copy):
-            if comp in comp_exceptions:
-                remove += [i]
-
-        plot_compounds = np.delete(np.array(self._compounds_copy), remove)
-        plot_conc = np.delete(x, remove)
-        
-        i_Pi = np.where(plot_compounds == 'Pi')
-        i_CoA = np.where(plot_compounds == 'CoA')
-        
-        plot_compounds[i_Pi] = 'Free Pi'
-        plot_compounds[i_CoA] = 'Free CoA'
-        
-        plot_reactions  = np.delete(self._reactions, self._excl_reactions_opt)
-        plot_dg0        = np.delete(self._dg0, self._excl_reactions_opt)
-        
-        #create string of net reaction to add to figure title
-        sub = ''
-        prod = ''
-        for j in range(len(self._S_netR)):
-            if not self._compounds[j] == 'Pi':
-                 #to account for round-off errors: values to are ~0 should not be included in the reaction
-                 if abs(self._S_netR[j]) > 1e-9:
-                     if self._S_netR[j] < 0:
-                         sub += f'{abs(self._S_netR[j]):.2f} {self._compounds[j]} + '
-                     if self._S_netR[j] > 0:
-                        prod += f' {abs(self._S_netR[j]):.2f} {self._compounds[j]} + '
-            
-        
-        
-        sub = sub[0:-2]   #remove extra plus at the end for both sides of the reaction
-        prod = prod[0:-2]
-        
-        if self._netATP > 0:
-            prod    += f' + {abs(self._netATP):.2f} ATP'
-        elif self._netATP < 0:
-            sub     += f' + {abs(self._netATP):.2f} ATP'
-            
-        #save the netto reaction equation as attribute of object
-        netreaction_eq = sub + u'\u279E' + prod
-        
-        #make figures
-        plt.figure(figsize=(13,9))
-        plt.suptitle(netreaction_eq + '\n\n' + conditions)
-        plt.plot(plot_reactions, check_dg_prime, 'bo', label='$\Delta$ G\' equilibrium')
-        plt.plot(plot_reactions, plot_dg0, 'ro', alpha=0.4, label='$\Delta$ G$_0$')
-        plt.xticks(rotation=90)
-        plt.legend(loc='best')
-        plt.grid(True)
-        plt.ylabel('$\Delta$ G [kJ/mol]')
-        plt.xlabel('Reactions')
-        plt.tight_layout()
-
-        plt.figure(figsize=(13,9))
-        plt.suptitle(netreaction_eq + '\n\n' + conditions)
-        plt.plot(plot_compounds, plot_conc, 'bo')
-        plt.xticks(rotation=90)
-        plt.yscale('log')
-        plt.grid(True)
-        plt.plot([0, len(plot_compounds)], [10**-6, 10**-6], 'k-')
-        plt.plot([0, len(plot_compounds)], [10**-2, 10**-2], 'k-')
-        plt.ylabel('Conc [M]')
-        plt.xlabel('Compounds')
-        plt.tight_layout()
-        return
