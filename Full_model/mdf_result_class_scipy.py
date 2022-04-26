@@ -102,7 +102,7 @@ class MDF_Result(object):
             if comp in self._compounds and comp != 'H2O':
                 if comp[0] == 'r':
                     i = self._compounds.index(comp)
-                    conditions += f'\t {comp} = {self._opt_conc[i]:.3f}'.expandtabs()
+                    conditions += f'\t {comp} = {self._opt_conc[i]:.4f}'.expandtabs()
                 elif comp == 'H2':
                     i_H2 = self._compounds.index('H2')
                     cH2 = self._opt_conc[i_H2]

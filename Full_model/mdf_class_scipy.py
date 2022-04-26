@@ -596,6 +596,23 @@ class MDF_Analysis(Pathway_cc):
     def set_init_conc(self, value):
         """Get the initial concentration of compounds for the optimizer."""
         self._c0 = value
+        
+    def constrain_specific_reaction(self, reaction, value):
+        #get index of reaction
+        try:
+            i_reaction = self._reactions.index(reaction)
+        except:
+            warnings.warn('This reaction was not found in the reactions list, please check the spelling.')
+            return 
+        
+        if value < 0:
+            warnings.warn('Driving force should be a positive number! Analysis not executed.')
+            return
+        
+        self._constrain_reactions += [i_reaction]
+        self._constrain_reactions_values += [value]
+        
+        return
     
     def sensitivity_analysis(self, var: str, values: List[float], vary_compound_conc = False, 
                              set_fixed_c = True, user_defined_rNADH = False, user_defined_rNADPH = False, 
