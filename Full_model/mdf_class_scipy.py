@@ -268,7 +268,7 @@ class MDF_Analysis(Pathway_cc):
         
         return bnds
     
-    
+    #Initial objective: minimise the MDF - still an option for the model
     def execute_mdf_basis(self, set_fixed_c=False, user_defined_rNADH = False, user_defined_rNADPH = False, user_defined_rFd = False, phys_bounds = False):
         """     Function to optimize for the MDF of the pathway.
                 Can be done with or without fixed concentrations for specific compounds. 
@@ -419,6 +419,7 @@ class MDF_Analysis(Pathway_cc):
                           self._excl_reactions_opt,
                           self._rel_flux)
     
+    #OBJECTIVE USED IN THESIS: minimise penalty function of concentrations, subject reactions to a specific MDF
     def optimize_concentrations(self, user_defined_rNADH = False, user_defined_rNADPH = False, user_defined_rFd = False, dg_target = 0):
         
         #optimisation target
@@ -706,6 +707,8 @@ class MDF_Analysis(Pathway_cc):
         else:
             return MDF_Sens_Analysis_Result(result_objects, comp, values)
 
+################################################################################
+# Code below is for equilibrium modeling, but needs further development. Not used for thesis.
     def model_dg_eq(self, user_defined_rNADH = False, user_defined_rNADPH = False, user_defined_rFd = False):
         
         #equilibrium modeling
